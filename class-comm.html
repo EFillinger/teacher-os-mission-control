@@ -716,7 +716,7 @@ function resetTimer(){clearInterval(timerInt);timerRunning=false;timerSecs=0;upd
 
 function imgSearch(){var q=document.getElementById('img-search-inp').value.trim();if(!q)return;window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q),'_blank');}
 function ytSearch(){var q=document.getElementById('yt-search-inp').value.trim();if(!q)return;window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(q),'_blank');}
-function launchProjector(){alert('Projector start screen — coming soon!');}
+function launchProjector(){window.open('https://efillinger.github.io/teacher-os-mission-control/student-display.html','_blank');}
 
 function openExport(type){exportType=type;document.getElementById('export-title').textContent='EXPORT — '+type.toUpperCase();document.getElementById('export-modal').classList.add('on');}
 function closeExport(){document.getElementById('export-modal').classList.remove('on');}
