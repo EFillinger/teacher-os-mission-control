@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Display</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0f2680;   /* deep royal blue */
+    --surface:   #1a3399;   /* slightly lighter blue for cards */
+    --border:    #2a4ab8;   /* blue border */
+    --text:      #ffffff;
+    --muted:     #a8bce8;   /* light blue-grey */
+    --accent:    #e8621a;   /* school orange */
+    --accent2:   #f0b820;   /* school gold */
+    --danger:    #ff4444;
+    --ring-bg:   #0a1d6a;   /* darker blue for ring track */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── NAV BAR ── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 28px;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .nav-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .nav-class {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .nav-date {
+    font-size: .85rem;
+    color: var(--muted);
+    letter-spacing: .04em;
+  }
+
+  /* ── TAB BUTTONS ── */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    padding: 10px 28px 0;
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  .tab-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 7px 22px;
+    border: 2px solid var(--border);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: color .2s, background .2s;
+  }
+
+  .tab-btn.active {
+    background: var(--bg);
+    color: var(--accent);
+    border-color: var(--accent);
+    border-bottom: 2px solid var(--bg);
+    margin-bottom: -2px;
+  }
+
+  /* ── MAIN CONTENT AREA ── */
+  main {
+    flex: 1;
+    overflow: hidden;
+    border-top: 2px solid var(--border);
+  }
+
+  .screen { display: none; height: 100%; }
+  .screen.active { display: flex; }
+
+  /* ══════════════════════════════════
+     SCREEN 1 — AGENDA + QOTD
+  ══════════════════════════════════ */
+  #screen-agenda {
+    flex-direction: column;
+    padding: 28px 48px 24px;
+    gap: 24px;
+  }
+
+  /* AGENDA */
+  .agenda-block {
+    flex: 1.1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .block-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .block-label::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to right, var(--accent) 0%, transparent 100%);
+    opacity: .4;
+    border-radius: 2px;
+  }
+
+  .agenda-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .agenda-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent2);
+    border-radius: 8px;
+    padding: 12px 20px;
+    animation: fadeSlideIn .4s ease both;
+  }
+
+  .agenda-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--accent2);
+    min-width: 28px;
+    line-height: 1;
+  }
+
+  .agenda-text {
+    font-size: 1.55rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  /* QOTD */
+  .qotd-block {
+    flex: 0.9;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .qotd-card {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--accent);
+    border-radius: 10px;
+    padding: 22px 28px;
+    display: flex;
+    align-items: center;
+  }
+
+  .qotd-text {
+    font-size: 1.9rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  /* ══════════════════════════════════
+     SCREEN 2 — TIMER
+  ══════════════════════════════════ */
+  #screen-timer {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 24px;
+  }
+
+  .timer-label-top {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ring */
+  .ring-wrap {
+    position: relative;
+    width: 340px;
+    height: 340px;
+  }
+
+  .ring-wrap svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+  }
+
+  .ring-bg-circle {
+    fill: none;
+    stroke: var(--ring-bg);
+    stroke-width: 18;
+  }
+
+  .ring-progress {
+    fill: none;
+    stroke: var(--accent2);
+    stroke-width: 18;
+    stroke-linecap: round;
+    transition: stroke-dashoffset .9s linear, stroke .5s;
+  }
+
+  .ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .timer-digits {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 6.5rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    color: #ffffff;
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(0,0,0,0.8);
+  }
+
+  .timer-digits.warning { color: var(--accent); }
+  .timer-digits.danger  { color: var(--danger); }
+
+  .timer-sub {
+    font-size: .85rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #ffffff;
+    opacity: 0.75;
+  }
+
+  /* controls */
+  .timer-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .preset-btns {
+    display: flex;
+    gap: 8px;
+  }
+
+  .preset-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    padding: 8px 16px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  .ctrl-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 10px 28px;
+    border: 2px solid var(--accent2);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--accent2);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+
+  .ctrl-btn:hover { background: var(--accent2); color: var(--bg); }
+  .ctrl-btn.stop  { border-color: var(--danger); color: var(--danger); }
+  .ctrl-btn.stop:hover { background: var(--danger); color: var(--bg); }
+
+  /* custom input */
+  .custom-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .custom-wrap input {
+    width: 56px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 6px;
+  }
+
+  .custom-wrap input:focus { outline: none; border-color: var(--accent); }
+  .custom-wrap span { color: var(--muted); font-size: .85rem; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .4; }
+  }
+
+  .pulsing { animation: pulse .9s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-title">Class Comm</span>
+  <span class="nav-class" id="nav-class">Physics — Period 3</span>
+  <span class="nav-date" id="nav-date"></span>
+</nav>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchScreen('agenda', this)">Agenda &amp; QOTD</button>
+  <button class="tab-btn" onclick="switchScreen('timer', this)">Timer</button>
+</div>
+
+<main>
+
+  <!-- ── SCREEN 1: AGENDA + QOTD ── -->
+  <div id="screen-agenda" class="screen active">
+
+    <div class="agenda-block">
+      <div class="block-label">Today's Agenda</div>
+      <ul class="agenda-list" id="agenda-list">
+        <!-- populated by JS -->
+      </ul>
+    </div>
+
+    <div class="qotd-block">
+      <div class="block-label">Question of the Day</div>
+      <div class="qotd-card">
+        <p class="qotd-text" id="qotd-text">Loading…</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── SCREEN 2: TIMER ── -->
+  <div id="screen-timer" class="screen">
+
+    <div class="timer-label-top" id="timer-label">Work Time</div>
+
+    <div class="ring-wrap">
+      <svg viewBox="0 0 340 340" xmlns="http://www.w3.org/2000/svg">
+        <circle class="ring-bg-circle" cx="170" cy="170" r="150"/>
+        <circle class="ring-progress" id="ring" cx="170" cy="170" r="150"
+          stroke-dasharray="942.48" stroke-dashoffset="0"/>
+      </svg>
+      <div class="ring-center">
+        <div class="timer-digits" id="timer-digits">5:00</div>
+        <div class="timer-sub" id="timer-sub">minutes remaining</div>
+      </div>
+    </div>
+
+    <div class="timer-controls">
+      <div class="preset-btns">
+        <button class="preset-btn" onclick="setTimer(2)">2 min</button>
+        <button class="preset-btn" onclick="setTimer(5)">5 min</button>
+        <button class="preset-btn" onclick="setTimer(10)">10 min</button>
+        <button class="preset-btn" onclick="setTimer(15)">15 min</button>
+        <button class="preset-btn" onclick="setTimer(20)">20 min</button>
+      </div>
+      <div class="custom-wrap">
+        <input type="number" id="custom-min" min="1" max="90" placeholder="—">
+        <span>min</span>
+        <button class="preset-btn" onclick="setCustom()">Set</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <button class="ctrl-btn" id="start-btn" onclick="startPause()">Start</button>
+      <button class="ctrl-btn stop" onclick="resetTimer()">Reset</button>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ── DEMO DATA (replace with real lesson data later) ──
+const lessonData = {
+  className: "Physics — Period 3",
+  agenda: [
+    "Warm-up & QOTD",
+    "Review: Newton's 3rd Law",
+    "Lab: Rocket Cart Demo",
+    "Exit Ticket"
+  ],
+  qotd: "A skateboarder pushes off a wall and moves backward. What force caused the skateboarder to move, and where did it come from?"
+};
+
+// ── POPULATE ──
+document.getElementById('nav-class').textContent = lessonData.className;
+document.getElementById('qotd-text').textContent  = lessonData.qotd;
+
+const list = document.getElementById('agenda-list');
+lessonData.agenda.forEach((item, i) => {
+  const li = document.createElement('li');
+  li.className = 'agenda-item';
+  li.style.animationDelay = (i * 0.07) + 's';
+  li.innerHTML = `<span class="agenda-num">${i + 1}</span><span class="agenda-text">${item}</span>`;
+  list.appendChild(li);
+});
+
+// ── DATE ──
+const d = new Date();
+document.getElementById('nav-date').textContent =
+  d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+// ── TABS ──
+function switchScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── TIMER ──
+const CIRCUMFERENCE = 942.48;
+let totalSecs   = 300;
+let remaining   = 300;
+let interval    = null;
+let running     = false;
+
+const ring      = document.getElementById('ring');
+const digits    = document.getElementById('timer-digits');
+const subLabel  = document.getElementById('timer-sub');
+const startBtn  = document.getElementById('start-btn');
+
+function setTimer(mins) {
+  pauseTimer();
+  totalSecs = mins * 60;
+  remaining = totalSecs;
+  updateDisplay();
+}
+
+function setCustom() {
+  const v = parseInt(document.getElementById('custom-min').value);
+  if (v > 0 && v <= 90) setTimer(v);
+}
+
+function updateDisplay() {
+  const m = Math.floor(remaining / 60);
+  const s = remaining % 60;
+  digits.textContent = m + ':' + String(s).padStart(2, '0');
+
+  // ring
+  const pct = totalSecs > 0 ? remaining / totalSecs : 0;
+  ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
+
+  // color states — inline styles only (reliable across all browsers/projectors)
+  const minLeft = remaining / 60;
+  digits.style.color = '#ffffff';
+  if (minLeft <= 1) {
+    ring.style.stroke = '#ff4444';
+    subLabel.textContent = 'time is almost up';
+  } else if (minLeft <= 3) {
+    ring.style.stroke = '#e8621a';
+    subLabel.textContent = 'minutes remaining';
+  } else {
+    ring.style.stroke = '#f0b820';
+    subLabel.textContent = 'minutes remaining';
+  }
+
+  if (remaining === 0) {
+    clearInterval(interval);
+    running = false;
+    startBtn.textContent = 'Start';
+    digits.classList.add('pulsing');
+    subLabel.textContent = "time's up!";
+  }
+}
+
+function startPause() {
+  if (running) {
+    pauseTimer();
+  } else {
+    if (remaining === 0) { remaining = totalSecs; digits.classList.remove('pulsing'); }
+    interval = setInterval(() => { remaining--; updateDisplay(); }, 1000);
+    running  = true;
+    startBtn.textContent = 'Pause';
+  }
+}
+
+function pauseTimer() {
+  clearInterval(interval);
+  running = false;
+  startBtn.textContent = 'Start';
+}
+
+function resetTimer() {
+  pauseTimer();
+  remaining = totalSecs;
+  digits.classList.remove('pulsing');
+  updateDisplay();
+}
+
+updateDisplay();
+</script>
+</body>
+</html>
