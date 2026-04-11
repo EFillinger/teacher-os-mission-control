@@ -636,6 +636,8 @@ function loadLessonsFromSheets(period) {
     });
     showStatus('Loaded ' + lessons.length + ' lessons for ' + period);
     buildLib();
+    buildPrepPlist();
+    if(lessons.length){ loadEd(lessons[0].id); }
   }).catch(function(e) { showStatus('Lessons fetch failed: ' + e, '#3a0a0a'); });
 }
 
@@ -890,9 +892,10 @@ function buildPrepPlist(){
   var el=document.getElementById('prep-plist');el.innerHTML='';
   getPrepActive().forEach(function(i,idx){
     var c=schedule[i];var les=lessons.find(function(l){return l.id===(pmap[i]||1);})||lessons[0];
+    var lesName=les?les.name:'no lesson assigned';
     var d=document.createElement('div');d.className='pitem'+(idx===prepPer?' on':'');
-    d.innerHTML='<div style="font-size:14px;font-weight:bold;margin-bottom:2px;">'+c.sub+'</div><div style="font-size:11px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.name+' · '+les.name+'</div>';
-    (function(ii,jj){d.onclick=function(){prepPer=jj;buildPrepPlist();loadEd(pmap[ii]||1);};})(i,idx);
+    d.innerHTML='<div style="font-size:14px;font-weight:bold;margin-bottom:2px;">'+c.sub+'</div><div style="font-size:11px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.name+' · '+lesName+'</div>';
+    (function(ii,jj){d.onclick=function(){prepPer=jj;buildPrepPlist();if(lessons.length)loadEd(lessons[0].id);};})(i,idx);
     el.appendChild(d);
   });
 }
