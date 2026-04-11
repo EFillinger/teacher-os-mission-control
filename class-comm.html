@@ -436,7 +436,7 @@ body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;heigh
             </div>
             <div class="slist" id="slist"><div style="color:#2a2a2a;font-size:10px;text-align:center;padding:8px;">select a class above</div></div>
           </div>
-          <button onclick="alert('Roster saved!')" style="margin-top:10px;padding:7px;border:1px solid #2d8c2d;border-radius:4px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;width:100%;letter-spacing:1px;">✓ SAVE ROSTER</button>
+          <button onclick="saveRosterToSheets()" style="margin-top:10px;padding:7px;border:1px solid #2d8c2d;border-radius:4px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;width:100%;letter-spacing:1px;">✓ SAVE ROSTER</button>
         </div>
       </div>
     </div>
@@ -503,7 +503,7 @@ body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;heigh
       <div class="ps-mid-hdr">
         <div style="font-size:13px;color:#aaa;letter-spacing:1px;flex:1;" id="etitle">SELECT A CLASS OR LESSON</div>
         <button onclick="alert('Copy from last delivery')" style="font-size:12px;color:#336;cursor:pointer;border:1px solid #223;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">↩ COPY LAST</button>
-        <button onclick="alert('Saved!')" style="font-size:12px;color:#4db84d;cursor:pointer;border:1px solid #224422;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">✓ SAVE</button>
+        <button onclick="saveCurrentLesson()" style="font-size:12px;color:#4db84d;cursor:pointer;border:1px solid #224422;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">✓ SAVE</button>
       </div>
       <div class="ps-mid-body" id="ebody">
         <div style="color:#2a2a2a;font-size:11px;text-align:center;margin-top:50px;letter-spacing:2px;">SELECT A CLASS OR LESSON FROM LIBRARY</div>
@@ -526,6 +526,75 @@ body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;heigh
 
 <script>
 // ══════════════════════════════════════════════════════
+// GOOGLE SHEETS INTEGRATION
+// ══════════════════════════════════════════════════════
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7IKheLtXlVgJznD33z92DHp6iC5ql0KSY8ALwfS_gjaUO2EHdsEIv_QIAf1nbpE88VA/exec';
+
+function sheetsGet(params) {
+  var url = SCRIPT_URL + '?' + Object.keys(params).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  return fetch(url).then(function(r) { return r.json(); });
+}
+
+function sheetsPost(data) {
+  return fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); });
+}
+
+function loadScheduleFromSheets() {
+  sheetsGet({ action: 'getSchedule' }).then(function(res) {
+    if (res.error) { console.warn('Schedule:', res.error); return; }
+    schedule = res.schedule.map(function(s) {
+      return { name: s.className, sub: s.subject, day: s.day, period: s.period };
+    });
+    buildClsBtns();
+    setDay(curDay);
+  }).catch(function(e) { console.warn('Sheets unreachable', e); });
+}
+
+function loadRosterFromSheets(period) {
+  sheetsGet({ action: 'getRoster', period: period }).then(function(res) {
+    if (res.error) { console.warn('Roster:', res.error); return; }
+    ros[period] = res.students.map(function(s) {
+      return { name: s.firstName + ' ' + s.lastName, id: s.id, accommodations: s.accommodations, h: [], tier: '' };
+    });
+    loadClassData();
+  }).catch(function(e) { console.warn(e); });
+}
+
+function loadLessonsFromSheets(period) {
+  sheetsGet({ action: 'getLessons', period: period }).then(function(res) {
+    if (res.error) { console.warn('Lessons:', res.error); return; }
+    lessons = res.lessons;
+    renderLessonLibrary();
+  }).catch(function(e) { console.warn(e); });
+}
+
+function saveLessonToSheets(d) {
+  return sheetsPost({ action: 'saveLesson', data: d });
+}
+
+function logQuestionToSheets(period, student, question, result, score) {
+  var today = new Date().toLocaleDateString('en-US');
+  sheetsPost({ action: 'logQuestion', data: {
+    date: today, period: period,
+    studentId: student.id || '', studentName: student.name,
+    question: question || '', result: result, score: score
+  }}).catch(function(e) { console.warn(e); });
+}
+
+function logSessionToSheets(period, studentName, studentId, eventType, note) {
+  var today = new Date().toLocaleDateString('en-US');
+  sheetsPost({ action: 'logSession', data: {
+    date: today, period: period,
+    studentId: studentId || '', studentName: studentName || '',
+    eventType: eventType, note: note || ''
+  }}).catch(function(e) { console.warn(e); });
+}
+
 // SHARED DATA
 // ══════════════════════════════════════════════════════
 var schedule=[
@@ -629,7 +698,13 @@ function buildClsBtns(){
     el.appendChild(b);
   });
 }
-function switchClass(idx){curClsIdx=idx;getActivePeriods().forEach(function(i){var b=document.getElementById('clsbtn-'+i);if(b)styleClsBtn(b,i===idx);});loadClassData();}
+function switchClass(idx){
+  curClsIdx=idx;
+  getActivePeriods().forEach(function(i){var b=document.getElementById('clsbtn-'+i);if(b)styleClsBtn(b,i===idx);});
+  loadClassData();
+  var period=schedule[idx]&&schedule[idx].period;
+  if(period){loadRosterFromSheets(period);loadLessonsFromSheets(period);}
+}
 
 function loadClassData(){
   var cls=classData[curClsIdx],sc=schedule[curClsIdx];
@@ -669,9 +744,28 @@ function buildSidebar(){
 
 function openScore(idx){var cls=classData[curClsIdx];activeIdx=idx;document.getElementById('score-name').textContent=cls.students[idx].toUpperCase();document.getElementById('score-modal').classList.add('on');}
 function closeScore(){activeIdx=null;document.getElementById('score-modal').classList.remove('on');}
-function logScore(v){if(activeIdx===null)return;var cls=classData[curClsIdx];if(!cls.history[activeIdx])cls.history[activeIdx]=[];cls.history[activeIdx].push(v);closeScore();buildSidebar();updateCloseSummary();}
+function logScore(v){
+  if(activeIdx===null)return;
+  var cls=classData[curClsIdx];
+  if(!cls.history[activeIdx])cls.history[activeIdx]=[];
+  cls.history[activeIdx].push(v);
+  var scoreMap={g:'correct',y:'partial',r:'incorrect'};
+  var scoreVal={g:1,y:0.5,r:0};
+  var period=schedule[curClsIdx]&&schedule[curClsIdx].period;
+  var student={name:cls.students[activeIdx],id:cls.students[activeIdx]};
+  logQuestionToSheets(period,student,'',scoreMap[v],scoreVal[v]);
+  closeScore();buildSidebar();updateCloseSummary();
+}
 function showBehaviorModal(){var cls=classData[curClsIdx];document.getElementById('score-modal').classList.remove('on');document.getElementById('behavior-name').textContent=cls.students[activeIdx].toUpperCase()+' — BEHAVIOR NOTE';document.getElementById('behavior-text').value='';document.getElementById('behavior-modal').classList.add('on');}
-function saveBehavior(){var cls=classData[curClsIdx];cls.behavior[activeIdx]=true;document.getElementById('behavior-modal').classList.remove('on');activeIdx=null;buildSidebar();updateCloseSummary();}
+function saveBehavior(){
+  var cls=classData[curClsIdx];
+  cls.behavior[activeIdx]=true;
+  var note=document.getElementById('behavior-text').value.trim();
+  var period=schedule[curClsIdx]&&schedule[curClsIdx].period;
+  logSessionToSheets(period,cls.students[activeIdx],'','behavior',note);
+  document.getElementById('behavior-modal').classList.remove('on');
+  activeIdx=null;buildSidebar();updateCloseSummary();
+}
 function closeBehavior(){document.getElementById('behavior-modal').classList.remove('on');activeIdx=null;}
 
 function snStyle(done){return done?'border:1px solid #4db84d;background:#1a3a1a;color:#4db84d;':'border:1px solid #333;background:#2a2a2a;color:#888;';}
@@ -716,7 +810,7 @@ function resetTimer(){clearInterval(timerInt);timerRunning=false;timerSecs=0;upd
 
 function imgSearch(){var q=document.getElementById('img-search-inp').value.trim();if(!q)return;window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q),'_blank');}
 function ytSearch(){var q=document.getElementById('yt-search-inp').value.trim();if(!q)return;window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(q),'_blank');}
-function launchProjector(){window.open('https://efillinger.github.io/teacher-os-mission-control/student-display.html','_blank');}
+function launchProjector(){alert('Projector start screen — coming soon!');}
 
 function openExport(type){exportType=type;document.getElementById('export-title').textContent='EXPORT — '+type.toUpperCase();document.getElementById('export-modal').classList.add('on');}
 function closeExport(){document.getElementById('export-modal').classList.remove('on');}
@@ -903,6 +997,48 @@ function newLesson(){
   lessons.push(nl);curLes=nl.id;buildLib();loadEd(nl.id);
 }
 
+// LESSON + ROSTER SAVE HANDLERS
+// ══════════════════════════════════════════════════════
+function saveCurrentLesson(){
+  var les=lessons.find(function(l){return l.id===curLes;});
+  if(!les){alert('No lesson selected.');return;}
+  var period=schedule[prepPer]&&schedule[prepPer].period;
+  var payload={
+    id: les.id,
+    periods: period||'P1',
+    unit: les.unit||'',
+    title: les.title||'',
+    qotd: les.qotd||'',
+    agenda: les.agenda||[],
+    presentations: les.pres||[],
+    videos: les.vids||[],
+    reminders: les.rems||[],
+    debrief: les.debrief||'',
+    imageUrl: les.imageUrl||''
+  };
+  saveLessonToSheets(payload).then(function(res){
+    if(res.error){alert('Save failed: '+res.error);}
+    else{alert('Lesson saved to Google Sheets!');}
+  }).catch(function(){alert('Could not reach Google Sheets. Check your connection.');});
+}
+
+function saveRosterToSheets(){
+  var period=schedule[curRosCls]&&schedule[curRosCls].period;
+  if(!period){alert('No period found for this class.');return;}
+  var students=(ros[curRosCls]||[]).map(function(s,i){
+    return{
+      id: s.id||String(i+1).padStart(3,'0'),
+      firstName: s.name.split(' ')[0]||'',
+      lastName: s.name.split(' ').slice(1).join(' ')||'',
+      accommodations: s.notes||s.accommodations||''
+    };
+  });
+  sheetsPost({action:'updateRoster',period:period,data:students}).then(function(res){
+    if(res.error){alert('Save failed: '+res.error);}
+    else{alert('Roster saved to Google Sheets!');}
+  }).catch(function(){alert('Could not reach Google Sheets.');});
+}
+
 // BOOT
 // ══════════════════════════════════════════════════════
 var now=new Date();
@@ -912,6 +1048,8 @@ buildClsBtns();
 loadClassData();
 buildLib();
 loadEd(1);
+// Load live data from Google Sheets
+loadScheduleFromSheets();
 </script>
 </body>
 </html>
