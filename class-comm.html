@@ -249,6 +249,7 @@ body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;heigh
           <div class="zone">
             <div class="zlbl">PROJECTOR LAUNCH</div>
             <button onclick="launchProjector()" style="padding:4px 10px;border:1px solid #c8a800;border-radius:3px;background:#1a1500;color:#c8a800;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;">⬛ LAUNCH START SCREEN</button>
+            <button onclick="manualRefresh()" style="padding:4px 10px;border:1px solid #2d8c2d;border-radius:3px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH DATA</button>
           </div>
           <div class="zone">
             <div class="zlbl">CLASS STATUS</div>
@@ -568,6 +569,61 @@ function sheetsPost(data) {
   }).then(function(r) { return r.json(); });
 }
 
+// Central refresh — call after any Sheets data arrives
+function refreshAllScreens() {
+  loadClassData();
+  buildSidebar();
+  buildSNCompact();
+  buildLib();
+  buildPrepPlist();
+  buildRosCls();
+  buildSlist();
+  if(lessons.length){ loadEd(lessons[0].id); }
+}
+
+// Manual refresh button — added to nav bar
+function manualRefresh() {
+  showStatus('Refreshing data from Google Sheets...');
+  var period = schedule[curClsIdx] && schedule[curClsIdx].period;
+  if(!period){ showStatus('No period found for current class', '#3a0a0a'); return; }
+  Promise.all([
+    new Promise(function(resolve){
+      sheetsGet({action:'getRoster', period:period}).then(function(res){
+        if(res.error || !res.students){ resolve(); return; }
+        var idx = schedule.findIndex(function(s){ return s.period === period; });
+        if(idx < 0){ resolve(); return; }
+        ros[idx] = res.students.map(function(s){
+          var accStr=s.accommodations||'';
+          var parts=accStr.split(' | ');
+          var items=parts[0]?parts[0].split('; ').filter(Boolean):[];
+          return{name:s.firstName+' '+s.lastName,id:s.id,accommodations:accStr,reqs:!!(accStr),items:items,notes:parts[1]||''};
+        });
+        classData[idx].students = ros[idx].map(function(s){ return s.name; });
+        classData[idx].sn = ros[idx].filter(function(s){ return s.reqs; }).map(function(s){
+          return{name:s.name,done:false,items:[{text:s.accommodations,done:false}]};
+        });
+        resolve();
+      }).catch(resolve);
+    }),
+    new Promise(function(resolve){
+      sheetsGet({action:'getLessons', period:period}).then(function(res){
+        if(res.error || !res.lessons){ resolve(); return; }
+        lessons = res.lessons.map(function(l){
+          return{id:l.id,unit:l.unit||'Uncategorized',name:l.title||l.name||'Untitled',multi:false,
+            qotd:l.qotd||'',agenda:Array.isArray(l.agenda)?l.agenda:[],
+            pres:Array.isArray(l.presentations)?l.presentations.map(function(p){return{l:p.label||p.l||'',url:p.url||'',t:'slides'};}): [],
+            vids:Array.isArray(l.videos)?l.videos.map(function(v){return{l:v.label||v.l||'',url:v.url||'',t:'yt'};}): [],
+            rems:Array.isArray(l.reminders)?l.reminders:[],debrief:[],imageUrl:l.imageUrl||''};
+        });
+        resolve();
+      }).catch(resolve);
+    })
+  ]).then(function(){
+    refreshAllScreens();
+    showStatus('Data refreshed successfully');
+  });
+}
+
 function loadScheduleFromSheets() {
   sheetsGet({ action: 'getSchedule' }).then(function(res) {
     if (res.error) { console.warn('Schedule:', res.error); return; }
@@ -608,7 +664,7 @@ function loadRosterFromSheets(period) {
       return { name: s.name, done: false, items: [{text: s.accommodations, done: false}] };
     });
     // Refresh display if this is the active class
-    if(idx === curClsIdx){ loadClassData(); buildSidebar(); }
+    if(idx === curClsIdx){ refreshAllScreens(); }
     var firstStudent = res.students[0] ? (res.students[0].firstName + ' ' + res.students[0].lastName) : 'none';
     showStatus('Roster loaded: ' + res.students.length + ' students for ' + period + ' | idx=' + idx + ' curClsIdx=' + curClsIdx + ' | first: ' + firstStudent);
   }).catch(function(e) { showStatus('Roster fetch failed: ' + e.toString(), '#3a0a0a'); });
@@ -635,9 +691,7 @@ function loadLessonsFromSheets(period) {
       };
     });
     showStatus('Loaded ' + lessons.length + ' lessons for ' + period);
-    buildLib();
-    buildPrepPlist();
-    if(lessons.length){ loadEd(lessons[0].id); }
+    refreshAllScreens();
   }).catch(function(e) { showStatus('Lessons fetch failed: ' + e, '#3a0a0a'); });
 }
 
@@ -865,7 +919,7 @@ function resetTimer(){clearInterval(timerInt);timerRunning=false;timerSecs=0;upd
 
 function imgSearch(){var q=document.getElementById('img-search-inp').value.trim();if(!q)return;window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q),'_blank');}
 function ytSearch(){var q=document.getElementById('yt-search-inp').value.trim();if(!q)return;window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(q),'_blank');}
-function launchProjector(){alert('Projector start screen — coming soon!');}
+function launchProjector(){window.open('https://efillinger.github.io/teacher-os-mission-control/student-display.html','_blank');}
 
 function openExport(type){exportType=type;document.getElementById('export-title').textContent='EXPORT — '+type.toUpperCase();document.getElementById('export-modal').classList.add('on');}
 function closeExport(){document.getElementById('export-modal').classList.remove('on');}
