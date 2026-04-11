@@ -597,37 +597,24 @@ function logSessionToSheets(period, studentName, studentId, eventType, note) {
 
 // SHARED DATA
 // ══════════════════════════════════════════════════════
+// Your real schedule — loaded from Google Sheets on startup
 var schedule=[
-  {name:'Period 1',sub:'Chemistry',day:'B'},
-  {name:'Period 2',sub:'Physics',day:'A'},
-  {name:'Period 3',sub:'Physics',day:'B'},
-  {name:'Period 4',sub:'Chemistry',day:'B'},
-  {name:'Period 5',sub:'Physics',day:'A'}
+  {name:'UAS',          sub:'Unmanned Aerial Systems', day:'A', period:'P1'},
+  {name:'Intro to RC',  sub:'Intro to RC',             day:'A', period:'P2'},
+  {name:'UAS Innov.',   sub:'UAS Innovations',         day:'A', period:'P3'},
+  {name:'Intro to Avn', sub:'Intro to Aviation',       day:'B', period:'P5'},
+  {name:'UAS',          sub:'Unmanned Aerial Systems', day:'B', period:'P7'}
 ];
 
-var lessons=[
-  {id:1,unit:'Unit 3 — Forces',name:"Newton's Laws",multi:true,qotd:"If you push a wall, does the wall push back?",agenda:["Warm-up / QOTD","Review — Ch4 concepts","Newton's 3rd Law","Skateboard demo","Exit ticket"],pres:[{l:"Newton's Laws — Unit 3",t:'slides',url:''},{l:'Forces Visual Summary',t:'canva',url:''}],vids:[{l:"Veritasium: Newton's 3rd",t:'yt',url:''},{l:'Crash Course Physics #5',t:'yt',url:''}],rems:["Return graded labs","Field trip reminder"],debrief:[{d:'Mar 5 2025',n:"Skateboard demo great. Slow down on action/reaction."},{d:'Oct 2024',n:'Add more visuals.'}]},
-  {id:2,unit:'Unit 3 — Forces',name:'Lab Safety Review',multi:false,qotd:"Most important lab safety rule?",agenda:["Warm-up / QOTD","Safety video","Discussion","Sign contracts"],pres:[{l:'Lab Safety Slides',t:'canva',url:''}],vids:[{l:'Lab Safety Basics',t:'yt',url:''}],rems:["Collect signed contracts"],debrief:[{d:'Sep 2024',n:'Print extra contracts next time.'}]},
-  {id:3,unit:'Unit 3 — Forces',name:'Forces & Motion Intro',multi:false,qotd:"What makes an object start moving?",agenda:["Warm-up / QOTD","Forces overview","Worked examples","Partner practice"],pres:[{l:'Forces Intro',t:'slides',url:''}],vids:[{l:'MinutePhysics: Force',t:'yt',url:''}],rems:["Hand out reference sheets"],debrief:[]},
-  {id:4,unit:'Unit 2 — Motion',name:'Velocity & Acceleration',multi:true,qotd:"Difference between speed and velocity?",agenda:["Warm-up / QOTD","Velocity vs speed","Acceleration examples","Graph practice"],pres:[{l:'Velocity & Acceleration',t:'slides',url:''}],vids:[{l:'Khan: Acceleration',t:'yt',url:''}],rems:["Return Unit 2 quizzes"],debrief:[{d:'Jan 2025',n:'Graph practice too short.'}]},
-  {id:5,unit:'Unit 2 — Motion',name:'Distance vs Displacement',multi:false,qotd:"Travel 10 miles, zero displacement?",agenda:["Warm-up / QOTD","Distance vs displacement","Vector diagrams","Exit ticket"],pres:[{l:'Distance & Displacement',t:'slides',url:''}],vids:[],rems:[],debrief:[]}
-];
+// Lessons — loaded from Google Sheets when a class is selected
+var lessons=[];
 
-var classData={
-  0:{qotd:"What element has the symbol Au?",agenda:["Warm-up / QOTD","Periodic table review","Group activity","Exit ticket"],pres:[{l:'Periodic Table — Unit 2',t:'slides',url:''},{l:'Element Groups',t:'canva',url:''}],vids:[{l:'Periodic Table Song',t:'yt',url:''}],rems:["Return lab reports"],students:["Ali B.","Beth C.","Carlos D.","Dana E.","Erik F.","Fay G.","Greg H.","Hope I.","Ivan J.","Jane K.","Kyle L.","Luna M.","Mark N.","Nina O.","Omar P.","Paula Q.","Quinn R.","Rosa S.","Sam T.","Tina U."],history:{},behavior:{},sn:[{name:'Beth C.',done:false,items:[{text:'Extended time',done:false},{text:'Seating check',done:false}]},{name:'Omar P.',done:false,items:[{text:'Comprehension check',done:false}]}]},
-  1:{qotd:"If you push a wall, does the wall push back?",agenda:["Warm-up / QOTD","Review — Ch4 concepts","Newton's 3rd Law","Skateboard demo","Exit ticket"],pres:[{l:"Newton's Laws — Unit 3",t:'slides',url:''},{l:'Forces Visual Summary',t:'canva',url:''}],vids:[{l:"Veritasium: Newton's 3rd",t:'yt',url:''},{l:'Crash Course Physics #5',t:'yt',url:''}],rems:["Return graded labs","Field trip reminder"],students:["Emma R.","Liam T.","Olivia M.","Noah K.","Ava S.","Ethan B.","Sophia L.","Mason W.","Isabella C.","Logan H.","Mia D.","Lucas P.","Charlotte F.","Aiden G.","Amelia N.","Jackson V.","Harper Z.","Elijah Q.","Evelyn J.","Grayson A.","Abigail Y.","Carter X.","Emily U.","Sebastian I.","Scarlett O."],history:{8:['r','r'],13:['r','y'],0:['g','g','g'],1:['g','y'],5:['y','r']},behavior:{8:true,13:true},sn:[{name:'Jordan M.',done:false,items:[{text:'Comprehension check',done:false},{text:'Extended time reminded',done:false},{text:'Preferential seating OK',done:false}]},{name:'Casey T.',done:true,items:[{text:'Read aloud accommodation',done:true},{text:'Checked at midpoint',done:true}]},{name:'Riley S.',done:false,items:[{text:'Sensory break offered',done:false},{text:'Modified assignment given',done:true}]}]},
-  2:{qotd:"What makes an object start moving?",agenda:["Warm-up / QOTD","Forces overview","Worked examples","Partner practice"],pres:[{l:'Forces Intro',t:'slides',url:''}],vids:[{l:'MinutePhysics: Force',t:'yt',url:''}],rems:["Hand out reference sheets"],students:["Moore I.","Nelson L.","Ortiz M.","Parker L.","Quinn C.","Reed A.","Scott Am.","Taylor J.","Upton H.","Vance E.","Walsh Ev.","Xavier G.","Young Ab.","Zhang C.","Adams Em.","Baker F.","Cole G.","Dean H.","Ellis I.","Ford J."],history:{},behavior:{},sn:[{name:'Ortiz M.',done:false,items:[{text:'Modified assignments',done:false},{text:'Check in',done:false}]}]},
-  3:{qotd:"What is an acid?",agenda:["Warm-up / QOTD","Acids & bases intro","pH scale activity","Exit ticket"],pres:[{l:'Acids & Bases — Unit 4',t:'slides',url:''}],vids:[{l:'Crash Course Chem: pH',t:'yt',url:''}],rems:["Collect safety forms"],students:["Grant A.","Hayes B.","Irwin C.","James D.","King E.","Lewis F.","Moore G.","Nash H.","Owen I.","Page J.","Quinn K.","Ross L.","Stone M.","Todd N.","Upton O.","Vance P.","Webb Q.","Xan R.","York S.","Zane T."],history:{},behavior:{},sn:[{name:'Hayes B.',done:false,items:[{text:'504 — extended time',done:false}]}]},
-  4:{qotd:"Can you travel 10 miles but have zero displacement?",agenda:["Warm-up / QOTD","Distance vs displacement","Vector diagrams","Exit ticket"],pres:[{l:'Distance & Displacement',t:'slides',url:''}],vids:[],rems:[],students:["Aaron B.","Blake C.","Cara D.","Drew E.","Elle F.","Finn G.","Gwen H.","Hank I.","Iris J.","Jake K.","Kara L.","Leo M.","Maya N.","Ned O.","Opal P.","Pete Q.","Quinn R.","Remy S.","Sara T.","Troy U.","Uma V.","Vera W.","Walt X.","Xena Y.","Yara Z."],history:{},behavior:{},sn:[{name:'Cara D.',done:false,items:[{text:'Comprehension check',done:false},{text:'Seating OK',done:false}]},{name:'Finn G.',done:false,items:[{text:'Extended time',done:false}]}]}
-};
+// Class data — populated from Sheets; empty shells here so app doesn't crash before load
+function emptyClass(){return{qotd:'',agenda:[],pres:[],vids:[],rems:[],students:[],history:{},behavior:{},sn:[]};}
+var classData={0:emptyClass(),1:emptyClass(),2:emptyClass(),3:emptyClass(),4:emptyClass()};
 
-var ros={
-  0:[{name:'Ali B.',reqs:false,items:[],notes:''},{name:'Beth C.',reqs:true,items:['Extended time','Seating check'],notes:'IEP on file.'},{name:'Carlos D.',reqs:false,items:[],notes:''},{name:'Dana E.',reqs:false,items:[],notes:''},{name:'Erik F.',reqs:false,items:[],notes:''}],
-  1:[{name:'Emma R.',reqs:false,items:[],notes:''},{name:'Liam T.',reqs:false,items:[],notes:''},{name:'Olivia M.',reqs:false,items:[],notes:''},{name:'Noah K.',reqs:false,items:[],notes:''},{name:'Ava S.',reqs:false,items:[],notes:''}],
-  2:[{name:'Moore I.',reqs:false,items:[],notes:''},{name:'Nelson L.',reqs:false,items:[],notes:''},{name:'Ortiz M.',reqs:true,items:['Modified assignments','Check in'],notes:''}],
-  3:[{name:'Grant A.',reqs:false,items:[],notes:''},{name:'Hayes B.',reqs:true,items:['504 — extended time'],notes:''}],
-  4:[{name:'Aaron B.',reqs:false,items:[],notes:''},{name:'Blake C.',reqs:false,items:[],notes:''},{name:'Cara D.',reqs:true,items:['Comprehension check','Seating OK'],notes:''}]
-};
+// Rosters — loaded from Google Sheets when a class is selected
+var ros={0:[],1:[],2:[],3:[],4:[]};
 
 // ══════════════════════════════════════════════════════
 // SHARED STATE
@@ -1047,9 +1034,11 @@ setPrepDay('A');
 buildClsBtns();
 loadClassData();
 buildLib();
-loadEd(1);
-// Load live data from Google Sheets
+// Load live data from Google Sheets on startup
 loadScheduleFromSheets();
+// Load roster and lessons for the default active class
+var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
+if(defaultPeriod){ loadRosterFromSheets(defaultPeriod); loadLessonsFromSheets(defaultPeriod); }
 </script>
 </body>
 </html>
