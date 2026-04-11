@@ -543,7 +543,7 @@ function showStatus(msg, color) {
   el.style.color = color ? '#e05050' : '#4db84d';
   el.textContent = msg;
   clearTimeout(el._timer);
-  if (!color) el._timer = setTimeout(function(){ el.style.display='none'; }, 15000);
+  if (!color) el._timer = setTimeout(function(){ el.style.display='none'; }, 3000);
 }
 
 function sheetsGet(params) {
@@ -580,7 +580,6 @@ function loadScheduleFromSheets() {
 }
 
 function loadRosterFromSheets(period) {
-  showStatus('Calling getRoster for period: ' + period);
   sheetsGet({ action: 'getRoster', period: period }).then(function(res) {
     if (res.error) { showStatus('Roster error: ' + res.error, '#3a0a0a'); return; }
     // Find which index in schedule matches this period
@@ -1035,7 +1034,6 @@ function saveReq(){
   buildSlist();
   // Auto-save roster to Sheets so accommodations persist
   var period = schedule[curRosCls] && schedule[curRosCls].period;
-  showStatus('saveReq: curRosCls=' + curRosCls + ' period=' + period + ' students=' + (ros[curRosCls]||[]).length);
   if(period){
     var students = ros[curRosCls].map(function(st, i){
       return {
@@ -1115,10 +1113,9 @@ buildLib();
 // Load live data from Google Sheets on startup
 loadScheduleFromSheets();
 // Load roster and lessons for the default active class
-var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period; showStatus('Boot: curClsIdx=' + curClsIdx + ' defaultPeriod=' + defaultPeriod);
+var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
 if(defaultPeriod){ loadRosterFromSheets(defaultPeriod); loadLessonsFromSheets(defaultPeriod); }
-// Show a status message so we know Sheets calls fired
-showStatus('Loading data from Google Sheets...');
+
 </script>
 </body>
 </html>
