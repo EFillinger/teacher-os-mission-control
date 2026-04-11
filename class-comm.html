@@ -580,6 +580,7 @@ function loadScheduleFromSheets() {
 }
 
 function loadRosterFromSheets(period) {
+  showStatus('Calling getRoster for period: ' + period);
   sheetsGet({ action: 'getRoster', period: period }).then(function(res) {
     if (res.error) { showStatus('Roster error: ' + res.error, '#3a0a0a'); return; }
     // Find which index in schedule matches this period
@@ -587,7 +588,19 @@ function loadRosterFromSheets(period) {
     if(idx < 0){ showStatus('No schedule slot for period ' + period, '#3a0a0a'); return; }
     // Store in ros
     ros[idx] = res.students.map(function(s) {
-      return { name: s.firstName + ' ' + s.lastName, id: s.id, accommodations: s.accommodations||'', reqs: !!(s.accommodations), items:[], notes: s.accommodations||'' };
+      var accStr = s.accommodations || '';
+      var parts = accStr.split(' | ');
+      var itemStr = parts[0] || '';
+      var notes = parts[1] || '';
+      var items = itemStr ? itemStr.split('; ').filter(Boolean) : [];
+      return {
+        name: s.firstName + ' ' + s.lastName,
+        id: s.id,
+        accommodations: accStr,
+        reqs: !!(accStr),
+        items: items,
+        notes: notes
+      };
     });
     // Update classData students so Comm Center shows them
     classData[idx].students = ros[idx].map(function(s){ return s.name; });
@@ -1010,7 +1023,34 @@ function toggleReq(){reqDraft.reqs=!reqDraft.reqs;updateTogUI();}
 function updateTogUI(){var tr=document.getElementById('togrow'),tc=document.getElementById('togchk'),tl=document.getElementById('toglbl'),rd=document.getElementById('rdetails');if(reqDraft.reqs){tr.style.border='1px solid #c8a800';tr.style.background='#1a1500';tc.style.border='1px solid #c8a800';tc.style.background='#2a2000';tc.style.color='#c8a800';tc.textContent='✓';tl.style.color='#c8a800';rd.style.display='block';}else{tr.style.border='1px solid #2a2a2a';tr.style.background='#151515';tc.style.border='1px solid #444';tc.style.background='transparent';tc.style.color='#444';tc.textContent='';tl.style.color='#666';rd.style.display='none';}}
 function buildRItems(){var el=document.getElementById('ritemlist');el.innerHTML='';reqDraft.items.forEach(function(it,i){var r=document.createElement('div');r.style.cssText='display:flex;align-items:center;gap:5px;margin-bottom:4px;';var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.style.fontSize='10px';inp.onchange=function(){reqDraft.items[i]=this.value;};var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){reqDraft.items.splice(i,1);buildRItems();};r.appendChild(inp);r.appendChild(d);el.appendChild(r);});}
 function addRI(){var inp=document.getElementById('rnewitem');var v=inp.value.trim();if(!v)return;reqDraft.items.push(v);inp.value='';buildRItems();}
-function saveReq(){if(reqIdx===null)return;var s=ros[curRosCls][reqIdx];s.reqs=reqDraft.reqs;s.items=reqDraft.items.slice();s.notes=document.getElementById('rnotes').value;closeReq();buildSlist();}
+function saveReq(){
+  if(reqIdx===null)return;
+  var s=ros[curRosCls][reqIdx];
+  s.reqs=reqDraft.reqs;
+  s.items=reqDraft.items.slice();
+  s.notes=document.getElementById('rnotes').value;
+  // Store accommodations as a combined string for Sheets
+  s.accommodations = s.items.join('; ') + (s.notes ? ' | ' + s.notes : '');
+  closeReq();
+  buildSlist();
+  // Auto-save roster to Sheets so accommodations persist
+  var period = schedule[curRosCls] && schedule[curRosCls].period;
+  if(period){
+    var students = ros[curRosCls].map(function(st, i){
+      return {
+        id: st.id || String(i+1).padStart(3,'0'),
+        firstName: st.name.split(' ')[0] || '',
+        lastName: st.name.split(' ').slice(1).join(' ') || '',
+        accommodations: st.accommodations || (st.items||[]).join('; ') + (st.notes ? ' | ' + st.notes : '')
+      };
+    });
+    sheetsPost({action:'updateRoster', period:period, data:students})
+      .then(function(res){
+        if(res.error){ showStatus('Accommodations save failed: '+res.error,'#3a0a0a'); }
+        else{ showStatus('Accommodations saved for ' + s.name); }
+      }).catch(function(e){ showStatus('Could not save accommodations: '+e,'#3a0a0a'); });
+  }
+}
 
 // ══════════════════════════════════════════════════════
 function newLesson(){
@@ -1074,7 +1114,7 @@ buildLib();
 // Load live data from Google Sheets on startup
 loadScheduleFromSheets();
 // Load roster and lessons for the default active class
-var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
+var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period; showStatus('Boot: curClsIdx=' + curClsIdx + ' defaultPeriod=' + defaultPeriod);
 if(defaultPeriod){ loadRosterFromSheets(defaultPeriod); loadLessonsFromSheets(defaultPeriod); }
 // Show a status message so we know Sheets calls fired
 showStatus('Loading data from Google Sheets...');
