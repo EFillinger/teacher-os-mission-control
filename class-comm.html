@@ -506,7 +506,7 @@ body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;heigh
       <div class="ps-mid-hdr">
         <div style="font-size:13px;color:#aaa;letter-spacing:1px;flex:1;" id="etitle">SELECT A CLASS OR LESSON</div>
         <button onclick="alert('Copy from last delivery')" style="font-size:12px;color:#336;cursor:pointer;border:1px solid #223;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">↩ COPY LAST</button>
-        <button onclick="saveCurrentLesson()" style="font-size:12px;color:#4db84d;cursor:pointer;border:1px solid #224422;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">✓ SAVE</button>
+        <button id="save-lesson-btn" onclick="saveCurrentLesson()" style="font-size:12px;color:#4db84d;cursor:pointer;border:1px solid #224422;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">✓ SAVE</button>
       </div>
       <div class="ps-mid-body" id="ebody">
         <div style="color:#2a2a2a;font-size:11px;text-align:center;margin-top:50px;letter-spacing:2px;">SELECT A CLASS OR LESSON FROM LIBRARY</div>
@@ -637,7 +637,7 @@ function manualRefresh() {
 }
 
 function loadScheduleFromSheets() {
-  sheetsGet({ action: 'getSchedule' }).then(function(res) {
+  return sheetsGet({ action: 'getSchedule' }).then(function(res) {
     if (res.error) { console.warn('Schedule:', res.error); return; }
     schedule = res.schedule.map(function(s) {
       return { name: s.className, sub: s.subject, day: s.day, period: s.period };
@@ -774,6 +774,13 @@ var exportType='';
 // SCREEN NAV
 // ══════════════════════════════════════════════════════
 function showScreen(id){
+  // Warn if leaving Prep screen with unsaved changes
+  if(lessonDirty && document.getElementById('screen-prep').classList.contains('active') && id !== 'prep'){
+    if(!confirm('You have unsaved lesson changes. Leave anyway?')){
+      return;
+    }
+    clearDirty();
+  }
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('screen-'+id).classList.add('active');
@@ -952,7 +959,6 @@ function saveDebrief(){var note=document.getElementById('debrief-text').value.tr
 // ══════════════════════════════════════════════════════
 // PREP SCREEN
 // ══════════════════════════════════════════════════════
-var pmap={0:1,1:3,2:2,3:4,4:5};
 
 function setPrepDay(d){
   prepDay=d;
@@ -967,11 +973,20 @@ function updatePrepAP(){var a=getPrepActive();document.getElementById('prep-aplb
 function buildPrepPlist(){
   var el=document.getElementById('prep-plist');el.innerHTML='';
   getPrepActive().forEach(function(i,idx){
-    var c=schedule[i];var les=lessons.find(function(l){return l.id===(pmap[i]||1);})||lessons[0];
-    var lesName=les?les.name:'no lesson assigned';
+    var c=schedule[i];
+    // FIX: Use first lesson from loaded lessons array instead of hardcoded pmap
+    var les=lessons.length?lessons[0]:null;
+    var lesName=les?(les.name||les.title||'Untitled'):'no lesson loaded';
     var d=document.createElement('div');d.className='pitem'+(idx===prepPer?' on':'');
     d.innerHTML='<div style="font-size:14px;font-weight:bold;margin-bottom:2px;">'+c.sub+'</div><div style="font-size:11px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.name+' · '+lesName+'</div>';
-    (function(ii,jj){d.onclick=function(){prepPer=jj;buildPrepPlist();if(lessons.length)loadEd(lessons[0].id);};})(i,idx);
+    (function(ii,jj){d.onclick=function(){
+      prepPer=jj;
+      buildPrepPlist();
+      // FIX: Load lessons for this period when switching classes in Prep
+      var period=schedule[ii]&&schedule[ii].period;
+      if(period){loadLessonsFromSheets(period);}
+      else if(lessons.length){loadEd(lessons[0].id);}
+    };})(i,idx);
     el.appendChild(d);
   });
 }
@@ -989,34 +1004,35 @@ function buildLib(){
 }
 function loadEd(lid){
   curLes=lid;var l=lessons.find(function(x){return x.id===lid;});if(!l)return;
+  clearDirty(); // Reset dirty state when loading a lesson
   var lesTitle=(l.name||l.title||'Untitled');var lesUnit=(l.unit||'');document.getElementById('etitle').textContent=lesTitle.toUpperCase()+(lesUnit?' — '+lesUnit.toUpperCase():'');
   buildLib();
   var b=document.getElementById('ebody');b.innerHTML='';
   // QOTD
-  var qz=mz('QUESTION OF THE DAY');var qi=document.createElement('input');qi.className='inp';qi.value=l.qotd;qi.style.width='100%';qi.onchange=function(){l.qotd=this.value;};qz.appendChild(qi);b.appendChild(qz);
+  var qz=mz('QUESTION OF THE DAY');var qi=document.createElement('input');qi.className='inp';qi.value=l.qotd;qi.style.width='100%';qi.onchange=function(){l.qotd=this.value;markDirty();};qz.appendChild(qi);b.appendChild(qz);
   // AGENDA
   var az=mz('AGENDA','ADD ITEM');var al=document.createElement('div');
   l.agenda.forEach(function(it,i){al.appendChild(marow(it,i,l));});
-  az.appendChild(al);az.querySelector('button').onclick=function(){l.agenda.push('New item');loadEd(lid);};b.appendChild(az);
+  az.appendChild(al);az.querySelector('button').onclick=function(){l.agenda.push('New item');markDirty();loadEd(lid);};b.appendChild(az);
   // PRESENTATIONS
   var pz=mz('PRESENTATIONS','ADD LINK');var pl=document.createElement('div');
   l.pres.forEach(function(p,i){pl.appendChild(mlrow(p,i,l.pres,lid));});
-  pz.appendChild(pl);pz.querySelector('button').onclick=function(){l.pres.push({t:'slides',l:'New Presentation',url:''});loadEd(lid);};b.appendChild(pz);
+  pz.appendChild(pl);pz.querySelector('button').onclick=function(){l.pres.push({t:'slides',l:'New Presentation',url:''});markDirty();loadEd(lid);};b.appendChild(pz);
   // VIDEOS
   var vz=mz('VIDEOS','ADD LINK');var vl=document.createElement('div');
   l.vids.forEach(function(v,i){vl.appendChild(mlrow(v,i,l.vids,lid));});
-  vz.appendChild(vl);vz.querySelector('button').onclick=function(){l.vids.push({t:'yt',l:'New Video',url:''});loadEd(lid);};b.appendChild(vz);
+  vz.appendChild(vl);vz.querySelector('button').onclick=function(){l.vids.push({t:'yt',l:'New Video',url:''});markDirty();loadEd(lid);};b.appendChild(vz);
   // REMINDERS
   var rz=mz('REMINDERS','ADD');var rl=document.createElement('div');
   l.rems.forEach(function(r,i){rl.appendChild(mrrow(r,i,l,lid));});
-  rz.appendChild(rl);rz.querySelector('button').onclick=function(){l.rems.push('New reminder');loadEd(lid);};b.appendChild(rz);
+  rz.appendChild(rl);rz.querySelector('button').onclick=function(){l.rems.push('New reminder');markDirty();loadEd(lid);};b.appendChild(rz);
   // DEBRIEF
   var dz=mz('DEBRIEF NOTES');var db=document.createElement('div');db.className='dbx';
   if(!l.debrief.length){db.innerHTML='<span style="color:#2a2a2a;">no notes yet</span>';}
   else{l.debrief.forEach(function(de){var d=document.createElement('div');d.className='dent';d.innerHTML='<div class="ddate">'+de.d+'</div><div>'+de.n+'</div>';db.appendChild(d);});}
   dz.appendChild(db);
   var adb=document.createElement('button');adb.style.cssText='font-size:13px;color:#336;cursor:pointer;padding:5px 10px;border:1px dashed #223;border-radius:3px;background:none;font-family:"Share Tech Mono",monospace;letter-spacing:1px;margin-top:7px;';adb.textContent='+ ADD DEBRIEF NOTE';
-  adb.onclick=function(){var n=prompt('Debrief note:');if(n){var now=new Date();l.debrief.unshift({d:now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),n:n});loadEd(lid);}};
+  adb.onclick=function(){var n=prompt('Debrief note:');if(n){var now=new Date();l.debrief.unshift({d:now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),n:n});markDirty();loadEd(lid);}};
   dz.appendChild(adb);b.appendChild(dz);
 }
 function mz(lbl,act){
@@ -1028,8 +1044,8 @@ function mz(lbl,act){
 function marow(it,i,l){
   var r=document.createElement('div');r.className='arow';
   var n=document.createElement('span');n.style.cssText='font-size:13px;color:#c8a800;width:20px;flex-shrink:0;';n.textContent=String(i+1).padStart(2,'0');
-  var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.onchange=function(){l.agenda[i]=this.value;};
-  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){l.agenda.splice(i,1);loadEd(l.id);};
+  var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.onchange=function(){l.agenda[i]=this.value;markDirty();};
+  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){l.agenda.splice(i,1);markDirty();loadEd(l.id);};
   r.appendChild(n);r.appendChild(inp);r.appendChild(d);return r;
 }
 function mlrow(it,i,arr,lid){
@@ -1037,15 +1053,15 @@ function mlrow(it,i,arr,lid){
   var tmap={slides:'#4a8adf',canva:'#c04adf',yt:'#df4a4a'};
   var bmap={slides:'#1a4a8a',canva:'#4a1a4a',yt:'#4a1a1a'};
   var tg=document.createElement('span');tg.className='ltag';tg.style.cssText='border:1px solid '+bmap[it.t]+';color:'+tmap[it.t]+';font-size:9px;padding:2px 5px;border-radius:2px;white-space:nowrap;';tg.textContent=it.t.toUpperCase();
-  var lbl=document.createElement('input');lbl.className='inp';lbl.value=it.l;lbl.style.flex='1';lbl.placeholder='Label...';lbl.onchange=function(){it.l=this.value;};
-  var url=document.createElement('input');url.className='inp';url.value=it.url||'';url.style.flex='1.5';url.placeholder='Paste URL...';url.onchange=function(){it.url=this.value;};
-  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){arr.splice(i,1);loadEd(lid);};
+  var lbl=document.createElement('input');lbl.className='inp';lbl.value=it.l;lbl.style.flex='1';lbl.placeholder='Label...';lbl.onchange=function(){it.l=this.value;markDirty();};
+  var url=document.createElement('input');url.className='inp';url.value=it.url||'';url.style.flex='1.5';url.placeholder='Paste URL...';url.onchange=function(){it.url=this.value;markDirty();};
+  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){arr.splice(i,1);markDirty();loadEd(lid);};
   r.appendChild(tg);r.appendChild(lbl);r.appendChild(url);r.appendChild(d);return r;
 }
 function mrrow(it,i,l,lid){
   var r=document.createElement('div');r.style.cssText='display:flex;align-items:center;gap:5px;margin-bottom:3px;';
-  var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.onchange=function(){l.rems[i]=this.value;};
-  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){l.rems.splice(i,1);loadEd(lid);};
+  var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.onchange=function(){l.rems[i]=this.value;markDirty();};
+  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){l.rems.splice(i,1);markDirty();loadEd(lid);};
   r.appendChild(inp);r.appendChild(d);return r;
 }
 
@@ -1156,12 +1172,49 @@ function newLesson(){
   lessons.push(nl);curLes=nl.id;buildLib();loadEd(nl.id);
 }
 
+// DIRTY STATE TRACKING
+// ══════════════════════════════════════════════════════
+var lessonDirty = false;
+
+function markDirty() {
+  if (lessonDirty) return;
+  lessonDirty = true;
+  var btn = document.getElementById('save-lesson-btn');
+  if (btn) {
+    btn.style.borderColor = '#ff6600';
+    btn.style.color = '#ff6600';
+    btn.textContent = '● SAVE';
+  }
+}
+
+function clearDirty() {
+  lessonDirty = false;
+  var btn = document.getElementById('save-lesson-btn');
+  if (btn) {
+    btn.style.borderColor = '#224422';
+    btn.style.color = '#4db84d';
+    btn.textContent = '✓ SAVE';
+  }
+}
+
+// Warn before closing browser/tab with unsaved changes
+window.addEventListener('beforeunload', function(e) {
+  if (lessonDirty) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved lesson changes.';
+    return e.returnValue;
+  }
+});
+
 // LESSON + ROSTER SAVE HANDLERS
 // ══════════════════════════════════════════════════════
 function saveCurrentLesson(){
   var les=lessons.find(function(l){return l.id===curLes;});
   if(!les){alert('No lesson selected.');return;}
-  var period=schedule[prepPer]&&schedule[prepPer].period;
+  // FIX: Use getPrepActive() to get the correct schedule index
+  var activeIndices = getPrepActive();
+  var scheduleIdx = activeIndices[prepPer];
+  var period = schedule[scheduleIdx] && schedule[scheduleIdx].period;
   var payload={
     id: les.id,
     periods: period||'P1',
@@ -1175,9 +1228,20 @@ function saveCurrentLesson(){
     debrief: '',
     imageUrl: les.imageUrl||''
   };
+  // FIX: Also sync to classData so Comm Center sees changes immediately
+  if(scheduleIdx !== undefined && classData[scheduleIdx]){
+    classData[scheduleIdx].qotd = les.qotd || '';
+    classData[scheduleIdx].agenda = les.agenda || [];
+    classData[scheduleIdx].pres = les.pres || [];
+    classData[scheduleIdx].vids = les.vids || [];
+    classData[scheduleIdx].rems = les.rems || [];
+  }
   saveLessonToSheets(payload).then(function(res){
     if(res.error){alert('Save failed: '+res.error);}
-    else{alert('Lesson saved to Google Sheets!');}
+    else{
+      clearDirty();
+      showStatus('Lesson saved to Google Sheets!');
+    }
   }).catch(function(){alert('Could not reach Google Sheets. Check your connection.');});
 }
 
@@ -1206,11 +1270,25 @@ setPrepDay('A');
 buildClsBtns();
 loadClassData();
 buildLib();
-// Load live data from Google Sheets on startup
-loadScheduleFromSheets();
-// Load roster and lessons for the default active class
-var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
-if(defaultPeriod){ loadRosterFromSheets(defaultPeriod); loadLessonsFromSheets(defaultPeriod); }
+
+// FIX: Chain the Sheets loads properly to avoid race conditions
+// First load schedule, THEN load roster and lessons after schedule is ready
+loadScheduleFromSheets().then(function() {
+  // Now schedule is loaded, we can safely get the default period
+  var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
+  if(defaultPeriod){ 
+    loadRosterFromSheets(defaultPeriod); 
+    loadLessonsFromSheets(defaultPeriod); 
+  }
+}).catch(function(e) {
+  console.warn('Schedule load failed, using defaults:', e);
+  // Fallback: try to load with hardcoded schedule
+  var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
+  if(defaultPeriod){ 
+    loadRosterFromSheets(defaultPeriod); 
+    loadLessonsFromSheets(defaultPeriod); 
+  }
+});
 
 </script>
 </body>
