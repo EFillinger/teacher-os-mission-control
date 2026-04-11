@@ -616,10 +616,27 @@ function loadRosterFromSheets(period) {
 
 function loadLessonsFromSheets(period) {
   sheetsGet({ action: 'getLessons', period: period }).then(function(res) {
-    if (res.error) { console.warn('Lessons:', res.error); return; }
-    lessons = res.lessons;
-    renderLessonLibrary();
-  }).catch(function(e) { console.warn(e); });
+    if (res.error) { showStatus('Lessons error: ' + res.error, '#3a0a0a'); return; }
+    if (!res.lessons || !res.lessons.length) { showStatus('No lessons found for ' + period); buildLib(); return; }
+    // Remap Sheets field names to app field names
+    lessons = res.lessons.map(function(l) {
+      return {
+        id:      l.id,
+        unit:    l.unit    || 'Uncategorized',
+        name:    l.title   || l.name || 'Untitled',
+        multi:   false,
+        qotd:    l.qotd    || '',
+        agenda:  Array.isArray(l.agenda)        ? l.agenda        : [],
+        pres:    Array.isArray(l.presentations) ? l.presentations.map(function(p){ return {l: p.label||p.l||'', url: p.url||'', t:'slides'}; }) : [],
+        vids:    Array.isArray(l.videos)        ? l.videos.map(function(v){ return {l: v.label||v.l||'', url: v.url||'', t:'yt'}; }) : [],
+        rems:    Array.isArray(l.reminders)     ? l.reminders     : [],
+        debrief: [],
+        imageUrl: l.imageUrl || ''
+      };
+    });
+    showStatus('Loaded ' + lessons.length + ' lessons for ' + period);
+    buildLib();
+  }).catch(function(e) { showStatus('Lessons fetch failed: ' + e, '#3a0a0a'); });
 }
 
 function saveLessonToSheets(d) {
@@ -1070,13 +1087,13 @@ function saveCurrentLesson(){
     id: les.id,
     periods: period||'P1',
     unit: les.unit||'',
-    title: les.title||'',
+    title: les.name||les.title||'',
     qotd: les.qotd||'',
     agenda: les.agenda||[],
-    presentations: les.pres||[],
-    videos: les.vids||[],
+    presentations: (les.pres||[]).map(function(p){ return {label:p.l||'',url:p.url||''}; }),
+    videos: (les.vids||[]).map(function(v){ return {label:v.l||'',url:v.url||''}; }),
     reminders: les.rems||[],
-    debrief: les.debrief||'',
+    debrief: '',
     imageUrl: les.imageUrl||''
   };
   saveLessonToSheets(payload).then(function(res){
