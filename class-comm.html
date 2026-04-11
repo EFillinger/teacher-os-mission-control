@@ -529,6 +529,41 @@ body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;heigh
 
 <script>
 // ══════════════════════════════════════════════════════
+// DIRTY STATE TRACKING (must be at top before any functions reference it)
+// ══════════════════════════════════════════════════════
+var lessonDirty = false;
+
+function markDirty() {
+  if (lessonDirty) return;
+  lessonDirty = true;
+  var btn = document.getElementById('save-lesson-btn');
+  if (btn) {
+    btn.style.borderColor = '#ff6600';
+    btn.style.color = '#ff6600';
+    btn.textContent = '● SAVE';
+  }
+}
+
+function clearDirty() {
+  lessonDirty = false;
+  var btn = document.getElementById('save-lesson-btn');
+  if (btn) {
+    btn.style.borderColor = '#224422';
+    btn.style.color = '#4db84d';
+    btn.textContent = '✓ SAVE';
+  }
+}
+
+// Warn before closing browser/tab with unsaved changes
+window.addEventListener('beforeunload', function(e) {
+  if (lessonDirty) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved lesson changes.';
+    return e.returnValue;
+  }
+});
+
+// ══════════════════════════════════════════════════════
 // GOOGLE SHEETS INTEGRATION
 // ══════════════════════════════════════════════════════
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7IKheLtXlVgJznD33z92DHp6iC5ql0KSY8ALwfS_gjaUO2EHdsEIv_QIAf1nbpE88VA/exec';
@@ -763,7 +798,7 @@ var ros={0:[],1:[],2:[],3:[],4:[]};
 // ══════════════════════════════════════════════════════
 // SHARED STATE
 // ══════════════════════════════════════════════════════
-var curDay='A',curClsIdx=1,curMode='start',activeIdx=null,snActiveIdx=null;
+var curDay='A',curClsIdx=0,curMode='start',activeIdx=null,snActiveIdx=null;
 var timerSecs=0,timerRunning=false,timerInt=null;
 var pickQueue=[],curPickIdx=0;
 var prepDay='A',prepPer=0,curLes=1,curRosCls=0;
@@ -966,27 +1001,43 @@ function setPrepDay(d){
   document.getElementById('prep-abtn-A').style.color=d==='A'?'#00ccff':'#888';
   document.getElementById('prep-abtn-B').style.background=d==='B'?'#003a4a':'#1a1a1a';
   document.getElementById('prep-abtn-B').style.color=d==='B'?'#00ccff':'#888';
-  buildPrepPlist();updatePrepAP();
+  // Reset prepPer to 0 when changing days
+  prepPer=0;
+  buildPrepPlist();
+  updatePrepAP();
+  // Load lessons for the first class of the new day
+  var activeIndices = getPrepActive();
+  if(activeIndices.length > 0){
+    var firstIdx = activeIndices[0];
+    var period = schedule[firstIdx] && schedule[firstIdx].period;
+    if(period){ loadLessonsFromSheets(period); }
+  }
 }
 function getPrepActive(){var a=[];schedule.forEach(function(c,i){if(c.day===prepDay||c.day==='AB')a.push(i);});return a;}
 function updatePrepAP(){var a=getPrepActive();document.getElementById('prep-aplbl').textContent=a.map(function(i){return schedule[i].name.replace('Period ','P');}).join(' · ')||'—';}
 function buildPrepPlist(){
   var el=document.getElementById('prep-plist');el.innerHTML='';
-  getPrepActive().forEach(function(i,idx){
-    var c=schedule[i];
-    // FIX: Use first lesson from loaded lessons array instead of hardcoded pmap
-    var les=lessons.length?lessons[0]:null;
-    var lesName=les?(les.name||les.title||'Untitled'):'no lesson loaded';
-    var d=document.createElement('div');d.className='pitem'+(idx===prepPer?' on':'');
+  var activeIndices = getPrepActive();
+  activeIndices.forEach(function(schedIdx,listIdx){
+    var c=schedule[schedIdx];
+    // Show current lesson name if we have lessons loaded
+    var lesName=lessons.length?(lessons[0].name||lessons[0].title||'Untitled'):'click to load';
+    var d=document.createElement('div');d.className='pitem'+(listIdx===prepPer?' on':'');
     d.innerHTML='<div style="font-size:14px;font-weight:bold;margin-bottom:2px;">'+c.sub+'</div><div style="font-size:11px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.name+' · '+lesName+'</div>';
-    (function(ii,jj){d.onclick=function(){
-      prepPer=jj;
+    (function(schIdx,lstIdx){d.onclick=function(){
+      // Check for unsaved changes before switching
+      if(lessonDirty){
+        if(!confirm('You have unsaved lesson changes. Switch class anyway?')){
+          return;
+        }
+        clearDirty();
+      }
+      prepPer=lstIdx;
       buildPrepPlist();
-      // FIX: Load lessons for this period when switching classes in Prep
-      var period=schedule[ii]&&schedule[ii].period;
-      if(period){loadLessonsFromSheets(period);}
-      else if(lessons.length){loadEd(lessons[0].id);}
-    };})(i,idx);
+      // Load lessons for the newly selected class
+      var period=schedule[schIdx]&&schedule[schIdx].period;
+      if(period){ loadLessonsFromSheets(period); }
+    };})(schedIdx,listIdx);
     el.appendChild(d);
   });
 }
@@ -1004,7 +1055,7 @@ function buildLib(){
 }
 function loadEd(lid){
   curLes=lid;var l=lessons.find(function(x){return x.id===lid;});if(!l)return;
-  clearDirty(); // Reset dirty state when loading a lesson
+  clearDirty(); // Reset dirty state when loading a new lesson
   var lesTitle=(l.name||l.title||'Untitled');var lesUnit=(l.unit||'');document.getElementById('etitle').textContent=lesTitle.toUpperCase()+(lesUnit?' — '+lesUnit.toUpperCase():'');
   buildLib();
   var b=document.getElementById('ebody');b.innerHTML='';
@@ -1172,40 +1223,6 @@ function newLesson(){
   lessons.push(nl);curLes=nl.id;buildLib();loadEd(nl.id);
 }
 
-// DIRTY STATE TRACKING
-// ══════════════════════════════════════════════════════
-var lessonDirty = false;
-
-function markDirty() {
-  if (lessonDirty) return;
-  lessonDirty = true;
-  var btn = document.getElementById('save-lesson-btn');
-  if (btn) {
-    btn.style.borderColor = '#ff6600';
-    btn.style.color = '#ff6600';
-    btn.textContent = '● SAVE';
-  }
-}
-
-function clearDirty() {
-  lessonDirty = false;
-  var btn = document.getElementById('save-lesson-btn');
-  if (btn) {
-    btn.style.borderColor = '#224422';
-    btn.style.color = '#4db84d';
-    btn.textContent = '✓ SAVE';
-  }
-}
-
-// Warn before closing browser/tab with unsaved changes
-window.addEventListener('beforeunload', function(e) {
-  if (lessonDirty) {
-    e.preventDefault();
-    e.returnValue = 'You have unsaved lesson changes.';
-    return e.returnValue;
-  }
-});
-
 // LESSON + ROSTER SAVE HANDLERS
 // ══════════════════════════════════════════════════════
 function saveCurrentLesson(){
@@ -1214,10 +1231,18 @@ function saveCurrentLesson(){
   // FIX: Use getPrepActive() to get the correct schedule index
   var activeIndices = getPrepActive();
   var scheduleIdx = activeIndices[prepPer];
+  if(scheduleIdx === undefined){
+    alert('No class selected. Please select a class first.');
+    return;
+  }
   var period = schedule[scheduleIdx] && schedule[scheduleIdx].period;
+  if(!period){
+    alert('Could not determine period for this class.');
+    return;
+  }
   var payload={
     id: les.id,
-    periods: period||'P1',
+    periods: period,
     unit: les.unit||'',
     title: les.name||les.title||'',
     qotd: les.qotd||'',
@@ -1229,7 +1254,7 @@ function saveCurrentLesson(){
     imageUrl: les.imageUrl||''
   };
   // FIX: Also sync to classData so Comm Center sees changes immediately
-  if(scheduleIdx !== undefined && classData[scheduleIdx]){
+  if(classData[scheduleIdx]){
     classData[scheduleIdx].qotd = les.qotd || '';
     classData[scheduleIdx].agenda = les.agenda || [];
     classData[scheduleIdx].pres = les.pres || [];
@@ -1266,28 +1291,24 @@ function saveRosterToSheets(){
 // ══════════════════════════════════════════════════════
 var now=new Date();
 document.getElementById('prep-date').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}).toUpperCase();
-setPrepDay('A');
+
+// Initialize UI with fallback data first
 buildClsBtns();
 loadClassData();
 buildLib();
 
-// FIX: Chain the Sheets loads properly to avoid race conditions
-// First load schedule, THEN load roster and lessons after schedule is ready
+// Then load live data from Sheets - chain properly to avoid race conditions
 loadScheduleFromSheets().then(function() {
-  // Now schedule is loaded, we can safely get the default period
-  var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
-  if(defaultPeriod){ 
-    loadRosterFromSheets(defaultPeriod); 
-    loadLessonsFromSheets(defaultPeriod); 
-  }
+  // Schedule is now loaded - set up both Comm Center and Prep
+  // Comm Center: setDay will call switchClass which loads roster and lessons
+  setDay(curDay);
+  // Prep: Also initialize prep day and load its data
+  setPrepDay(prepDay);
 }).catch(function(e) {
   console.warn('Schedule load failed, using defaults:', e);
-  // Fallback: try to load with hardcoded schedule
-  var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
-  if(defaultPeriod){ 
-    loadRosterFromSheets(defaultPeriod); 
-    loadLessonsFromSheets(defaultPeriod); 
-  }
+  // Fallback with hardcoded data
+  setDay(curDay);
+  setPrepDay(prepDay);
 });
 
 </script>
