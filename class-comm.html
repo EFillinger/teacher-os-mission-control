@@ -1035,6 +1035,7 @@ function saveReq(){
   buildSlist();
   // Auto-save roster to Sheets so accommodations persist
   var period = schedule[curRosCls] && schedule[curRosCls].period;
+  showStatus('saveReq: curRosCls=' + curRosCls + ' period=' + period + ' students=' + (ros[curRosCls]||[]).length);
   if(period){
     var students = ros[curRosCls].map(function(st, i){
       return {
