@@ -543,7 +543,7 @@ function showStatus(msg, color) {
   el.style.color = color ? '#e05050' : '#4db84d';
   el.textContent = msg;
   clearTimeout(el._timer);
-  if (!color) el._timer = setTimeout(function(){ el.style.display='none'; }, 5000);
+  if (!color) el._timer = setTimeout(function(){ el.style.display='none'; }, 15000);
 }
 
 function sheetsGet(params) {
@@ -591,12 +591,14 @@ function loadRosterFromSheets(period) {
     });
     // Update classData students so Comm Center shows them
     classData[idx].students = ros[idx].map(function(s){ return s.name; });
+    console.log('classData['+idx+'].students set to', classData[idx].students);
     classData[idx].sn = ros[idx].filter(function(s){ return s.reqs; }).map(function(s){
       return { name: s.name, done: false, items: [{text: s.accommodations, done: false}] };
     });
     // Refresh display if this is the active class
     if(idx === curClsIdx){ loadClassData(); buildSidebar(); }
-    showStatus('Roster loaded: ' + res.students.length + ' students for ' + period);
+    var firstStudent = res.students[0] ? (res.students[0].firstName + ' ' + res.students[0].lastName) : 'none';
+    showStatus('Roster loaded: ' + res.students.length + ' students for ' + period + ' | idx=' + idx + ' curClsIdx=' + curClsIdx + ' | first: ' + firstStudent);
   }).catch(function(e) { showStatus('Roster fetch failed: ' + e.toString(), '#3a0a0a'); });
 }
 
