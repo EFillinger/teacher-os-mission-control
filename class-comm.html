@@ -581,12 +581,23 @@ function loadScheduleFromSheets() {
 
 function loadRosterFromSheets(period) {
   sheetsGet({ action: 'getRoster', period: period }).then(function(res) {
-    if (res.error) { console.warn('Roster:', res.error); return; }
-    ros[period] = res.students.map(function(s) {
-      return { name: s.firstName + ' ' + s.lastName, id: s.id, accommodations: s.accommodations, h: [], tier: '' };
+    if (res.error) { showStatus('Roster error: ' + res.error, '#3a0a0a'); return; }
+    // Find which index in schedule matches this period
+    var idx = schedule.findIndex(function(s){ return s.period === period; });
+    if(idx < 0){ showStatus('No schedule slot for period ' + period, '#3a0a0a'); return; }
+    // Store in ros
+    ros[idx] = res.students.map(function(s) {
+      return { name: s.firstName + ' ' + s.lastName, id: s.id, accommodations: s.accommodations||'', reqs: !!(s.accommodations), items:[], notes: s.accommodations||'' };
     });
-    loadClassData();
-  }).catch(function(e) { console.warn(e); });
+    // Update classData students so Comm Center shows them
+    classData[idx].students = ros[idx].map(function(s){ return s.name; });
+    classData[idx].sn = ros[idx].filter(function(s){ return s.reqs; }).map(function(s){
+      return { name: s.name, done: false, items: [{text: s.accommodations, done: false}] };
+    });
+    // Refresh display if this is the active class
+    if(idx === curClsIdx){ loadClassData(); buildSidebar(); }
+    showStatus('Roster loaded: ' + res.students.length + ' students for ' + period);
+  }).catch(function(e) { showStatus('Roster fetch failed: ' + e.toString(), '#3a0a0a'); });
 }
 
 function loadLessonsFromSheets(period) {
@@ -861,14 +872,14 @@ function buildLib(){
     var uh=document.createElement('div');uh.style.cssText='font-size:11px;color:#444;letter-spacing:1px;margin-bottom:4px;margin-top:10px;padding-bottom:3px;border-bottom:1px solid #1a1a1a;';uh.textContent=u;el.appendChild(uh);
     units[u].forEach(function(l){
       var ld=document.createElement('div');ld.className='rlesson'+(l.id===curLes?' on':'');
-      ld.innerHTML='<div>'+l.name+(l.multi?'<span class="tag">multi</span>':'')+'</div><div style="font-size:10px;color:#333;">'+l.debrief.length+' debrief note'+(l.debrief.length!==1?'s':'')+'</div>';
+      var dcount=(l.debrief||[]).length;ld.innerHTML='<div>'+(l.name||l.title||'Untitled')+(l.multi?'<span class="tag">multi</span>':'')+'</div><div style="font-size:10px;color:#333;">'+dcount+' debrief note'+(dcount!==1?'s':'')+'</div>';
       (function(lid){ld.onclick=function(){curLes=lid;loadEd(lid);buildLib();};})(l.id);el.appendChild(ld);
     });
   });
 }
 function loadEd(lid){
   curLes=lid;var l=lessons.find(function(x){return x.id===lid;});if(!l)return;
-  document.getElementById('etitle').textContent=l.name.toUpperCase()+' — '+l.unit.toUpperCase();
+  var lesTitle=(l.name||l.title||'Untitled');var lesUnit=(l.unit||'');document.getElementById('etitle').textContent=lesTitle.toUpperCase()+(lesUnit?' — '+lesUnit.toUpperCase():'');
   buildLib();
   var b=document.getElementById('ebody');b.innerHTML='';
   // QOTD
@@ -1063,6 +1074,8 @@ loadScheduleFromSheets();
 // Load roster and lessons for the default active class
 var defaultPeriod = schedule[curClsIdx] && schedule[curClsIdx].period;
 if(defaultPeriod){ loadRosterFromSheets(defaultPeriod); loadLessonsFromSheets(defaultPeriod); }
+// Show a status message so we know Sheets calls fired
+showStatus('Loading data from Google Sheets...');
 </script>
 </body>
 </html>
