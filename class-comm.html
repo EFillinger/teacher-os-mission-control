@@ -731,15 +731,19 @@ function loadRosterFromSheets(period) {
 }
 
 function loadLessonsFromSheets(period) {
-  // Check if we should skip this reload (just saved)
-  if (skipNextLessonReload) {
-    skipNextLessonReload = false;
-    showStatus('Skipping reload - using freshly saved data');
-    console.log('Skipping lesson reload for period', period);
+  // Check if we should skip this reload (recently saved)
+  if (!canReloadFromSheets()) {
+    showStatus('Using local data (recently saved)');
     return;
   }
   
   sheetsGet({ action: 'getLessons', period: period }).then(function(res) {
+    // Double-check we haven't saved while waiting for response
+    if (!canReloadFromSheets()) {
+      console.log('Discarding stale Sheets response - saved while waiting');
+      return;
+    }
+    
     console.log('loadLessonsFromSheets response for', period, ':', res);
     if (res.error) { showStatus('Lessons error: ' + res.error, '#3a0a0a'); return; }
     if (!res.lessons || !res.lessons.length) { showStatus('No lessons found for ' + period); buildLib(); return; }
@@ -747,6 +751,7 @@ function loadLessonsFromSheets(period) {
     lessons = res.lessons.map(function(l) {
       return {
         id:      l.id,
+        periods: l.periods || '',  // ADDED: preserve periods for multi-class lessons
         unit:    l.unit    || 'Uncategorized',
         name:    l.title   || l.name || 'Untitled',
         multi:   false,
@@ -829,8 +834,18 @@ var prepDay='A',prepPer=0,curLes=1,curRosCls=0;
 var reqIdx=null,reqDraft={reqs:false,items:[],notes:''};
 var exportType='';
 
-// Flag to prevent auto-reload from overwriting fresh saves
-var skipNextLessonReload = false;
+// Time-based protection: don't reload from Sheets if we saved recently
+var lastSaveTime = 0;
+var SAVE_PROTECTION_MS = 15000; // 15 seconds
+
+function canReloadFromSheets() {
+  var timeSinceSave = Date.now() - lastSaveTime;
+  if (timeSinceSave < SAVE_PROTECTION_MS) {
+    console.log('Skipping Sheets reload - saved ' + Math.round(timeSinceSave/1000) + 's ago');
+    return false;
+  }
+  return true;
+}
 
 // ══════════════════════════════════════════════════════
 // SCREEN NAV
@@ -1304,9 +1319,18 @@ function saveCurrentLesson(){
   console.log('Saving lesson:', les.name, 'to period:', period, 'scheduleIdx:', scheduleIdx);
   console.log('Lesson data:', {qotd: les.qotd, agenda: les.agenda, rems: les.rems});
   
+  // Preserve existing periods and add current period if not already present
+  var existingPeriods = les.periods || '';
+  var periodsArray = existingPeriods.split(',').map(function(p){ return p.trim(); }).filter(Boolean);
+  if (periodsArray.indexOf(period) === -1) {
+    periodsArray.push(period);
+  }
+  var combinedPeriods = periodsArray.join(',');
+  console.log('Combined periods:', combinedPeriods);
+  
   var payload={
     id: les.id,
-    periods: period,
+    periods: combinedPeriods,
     unit: les.unit||'',
     title: les.name||les.title||'',
     qotd: les.qotd||'',
@@ -1331,24 +1355,23 @@ function saveCurrentLesson(){
   // Also save to localStorage for Start Screen
   saveStartScreenData();
   
-  // Set flag to skip next reload (so we don't overwrite what we just saved)
-  skipNextLessonReload = true;
+  // Set save timestamp to protect from reload overwriting
+  lastSaveTime = Date.now();
+  console.log('Set lastSaveTime to', lastSaveTime);
   
   saveLessonToSheets(payload).then(function(res){
     console.log('saveLessonToSheets response:', res);
     if(res.error){
       alert('Save failed: '+res.error);
-      skipNextLessonReload = false; // Reset flag on error
     }
     else{
       clearDirty();
       showStatus('Lesson saved to Google Sheets!');
-      // Refresh the Comm Center display
+      // Refresh the Comm Center display with our local data
       loadClassData();
     }
   }).catch(function(e){
     console.error('Save error:', e);
-    skipNextLessonReload = false; // Reset flag on error
     alert('Could not reach Google Sheets. Check your connection.');
   });
 }
