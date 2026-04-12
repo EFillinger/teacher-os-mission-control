@@ -600,10 +600,23 @@ function sheetsGet(params) {
 }
 
 function sheetsPost(data) {
+  showStatus('Saving to Sheets: ' + data.action + '...');
   return fetch(SCRIPT_URL, {
     method: 'POST',
     body: JSON.stringify(data)
-  }).then(function(r) { return r.json(); });
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    if (res.error) {
+      showStatus('Sheets POST error: ' + res.error, '#3a0a0a');
+    } else {
+      showStatus('Sheets POST OK: ' + data.action);
+    }
+    console.log('sheetsPost response:', data.action, res);
+    return res;
+  }).catch(function(e) {
+    showStatus('Sheets POST failed: ' + e.toString(), '#3a0a0a');
+    console.error('sheetsPost error:', e);
+    throw e;
+  });
 }
 
 // Central refresh — call after any Sheets data arrives
@@ -718,7 +731,16 @@ function loadRosterFromSheets(period) {
 }
 
 function loadLessonsFromSheets(period) {
+  // Check if we should skip this reload (just saved)
+  if (skipNextLessonReload) {
+    skipNextLessonReload = false;
+    showStatus('Skipping reload - using freshly saved data');
+    console.log('Skipping lesson reload for period', period);
+    return;
+  }
+  
   sheetsGet({ action: 'getLessons', period: period }).then(function(res) {
+    console.log('loadLessonsFromSheets response for', period, ':', res);
     if (res.error) { showStatus('Lessons error: ' + res.error, '#3a0a0a'); return; }
     if (!res.lessons || !res.lessons.length) { showStatus('No lessons found for ' + period); buildLib(); return; }
     // Remap Sheets field names to app field names
@@ -738,6 +760,7 @@ function loadLessonsFromSheets(period) {
       };
     });
     showStatus('Loaded ' + lessons.length + ' lessons for ' + period);
+    console.log('Parsed lessons:', lessons);
     // Push first lesson data into classData for Comm Center display
     var idx = schedule.findIndex(function(s){ return s.period === period; });
     if(idx >= 0 && lessons.length){
@@ -747,6 +770,7 @@ function loadLessonsFromSheets(period) {
       classData[idx].pres    = l.pres    || [];
       classData[idx].vids    = l.vids    || [];
       classData[idx].rems    = l.rems    || [];
+      console.log('Updated classData['+idx+']:', classData[idx]);
     }
     refreshAllScreens();
   }).catch(function(e) { showStatus('Lessons fetch failed: ' + e, '#3a0a0a'); });
@@ -804,6 +828,9 @@ var pickQueue=[],curPickIdx=0;
 var prepDay='A',prepPer=0,curLes=1,curRosCls=0;
 var reqIdx=null,reqDraft={reqs:false,items:[],notes:''};
 var exportType='';
+
+// Flag to prevent auto-reload from overwriting fresh saves
+var skipNextLessonReload = false;
 
 // ══════════════════════════════════════════════════════
 // SCREEN NAV
@@ -1273,6 +1300,10 @@ function saveCurrentLesson(){
     alert('Could not determine period for this class.');
     return;
   }
+  
+  console.log('Saving lesson:', les.name, 'to period:', period, 'scheduleIdx:', scheduleIdx);
+  console.log('Lesson data:', {qotd: les.qotd, agenda: les.agenda, rems: les.rems});
+  
   var payload={
     id: les.id,
     periods: period,
@@ -1286,6 +1317,7 @@ function saveCurrentLesson(){
     debrief: '',
     imageUrl: les.imageUrl||''
   };
+  
   // Sync to classData so Comm Center sees changes immediately
   if(classData[scheduleIdx]){
     classData[scheduleIdx].qotd = les.qotd || '';
@@ -1293,16 +1325,32 @@ function saveCurrentLesson(){
     classData[scheduleIdx].pres = les.pres || [];
     classData[scheduleIdx].vids = les.vids || [];
     classData[scheduleIdx].rems = les.rems || [];
+    console.log('Synced to classData['+scheduleIdx+']:', classData[scheduleIdx]);
   }
+  
   // Also save to localStorage for Start Screen
   saveStartScreenData();
+  
+  // Set flag to skip next reload (so we don't overwrite what we just saved)
+  skipNextLessonReload = true;
+  
   saveLessonToSheets(payload).then(function(res){
-    if(res.error){alert('Save failed: '+res.error);}
+    console.log('saveLessonToSheets response:', res);
+    if(res.error){
+      alert('Save failed: '+res.error);
+      skipNextLessonReload = false; // Reset flag on error
+    }
     else{
       clearDirty();
       showStatus('Lesson saved to Google Sheets!');
+      // Refresh the Comm Center display
+      loadClassData();
     }
-  }).catch(function(){alert('Could not reach Google Sheets. Check your connection.');});
+  }).catch(function(e){
+    console.error('Save error:', e);
+    skipNextLessonReload = false; // Reset flag on error
+    alert('Could not reach Google Sheets. Check your connection.');
+  });
 }
 
 function saveRosterToSheets(){
