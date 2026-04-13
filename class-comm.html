@@ -651,7 +651,16 @@ function manualRefresh() {
         });
         classData[idx].students = ros[idx].map(function(s){ return s.name; });
         classData[idx].sn = ros[idx].filter(function(s){ return s.reqs; }).map(function(s){
-          return{name:s.name,done:false,items:[{text:s.accommodations,done:false}]};
+          // Split accommodations into separate items
+          var accParts = (s.accommodations || '').split(' | ');
+          var itemsStr = accParts[0] || '';
+          var itemsArr = itemsStr.split('; ').filter(Boolean).map(function(item){
+            return { text: item.trim(), done: false };
+          });
+          if (!itemsArr.length && s.accommodations) {
+            itemsArr = [{ text: s.accommodations, done: false }];
+          }
+          return{name:s.name,done:false,items:itemsArr};
         });
         resolve();
       }).catch(resolve);
@@ -660,11 +669,23 @@ function manualRefresh() {
       sheetsGet({action:'getLessons', period:period}).then(function(res){
         if(res.error || !res.lessons){ resolve(); return; }
         lessons = res.lessons.map(function(l){
+          // Parse reminders - handle string, array, or empty
+          var parsedRems = [];
+          if (Array.isArray(l.reminders)) {
+            parsedRems = l.reminders;
+          } else if (typeof l.reminders === 'string' && l.reminders.trim()) {
+            try {
+              parsedRems = JSON.parse(l.reminders);
+              if (!Array.isArray(parsedRems)) parsedRems = [parsedRems];
+            } catch(e) {
+              parsedRems = [l.reminders];
+            }
+          }
           return{id:l.id,unit:l.unit||'Uncategorized',name:l.title||l.name||'Untitled',multi:false,
             qotd:l.qotd||'',agenda:Array.isArray(l.agenda)?l.agenda:[],
             pres:Array.isArray(l.presentations)?l.presentations.map(function(p){return{l:p.label||p.l||'',url:p.url||'',t:'slides'};}): [],
             vids:Array.isArray(l.videos)?l.videos.map(function(v){return{l:v.label||v.l||'',url:v.url||'',t:'yt'};}): [],
-            rems:Array.isArray(l.reminders)?l.reminders:[],debrief:[],imageUrl:l.imageUrl||''};
+            rems:parsedRems,debrief:[],imageUrl:l.imageUrl||''};
         });
         // Push lesson data into classData so Comm Center shows it
         var cidx = schedule.findIndex(function(s){ return s.period === period; });
@@ -722,7 +743,17 @@ function loadRosterFromSheets(period) {
     classData[idx].students = ros[idx].map(function(s){ return s.name; });
     console.log('classData['+idx+'].students set to', classData[idx].students);
     classData[idx].sn = ros[idx].filter(function(s){ return s.reqs; }).map(function(s){
-      return { name: s.name, done: false, items: [{text: s.accommodations, done: false}] };
+      // Split accommodations into separate items - they're stored as "item1; item2; item3 | notes"
+      var accParts = (s.accommodations || '').split(' | ');
+      var itemsStr = accParts[0] || '';
+      var itemsArr = itemsStr.split('; ').filter(Boolean).map(function(item){
+        return { text: item.trim(), done: false };
+      });
+      // If no items parsed, create one from the whole string
+      if (!itemsArr.length && s.accommodations) {
+        itemsArr = [{ text: s.accommodations, done: false }];
+      }
+      return { name: s.name, done: false, items: itemsArr };
     });
     // Refresh display if this is the active class
     if(idx === curClsIdx){ refreshAllScreens(); }
@@ -759,9 +790,28 @@ function loadLessonsFromSheets(period) {
     }
     // Remap Sheets field names to app field names
     lessons = res.lessons.map(function(l) {
+      // Debug: log what reminders looks like from Sheets
+      console.log('Raw lesson from Sheets:', l.title, '| reminders type:', typeof l.reminders, '| value:', l.reminders);
+      
+      // Parse reminders - handle string, array, or empty
+      var parsedRems = [];
+      if (Array.isArray(l.reminders)) {
+        parsedRems = l.reminders;
+      } else if (typeof l.reminders === 'string' && l.reminders.trim()) {
+        // Try to parse as JSON first
+        try {
+          parsedRems = JSON.parse(l.reminders);
+          if (!Array.isArray(parsedRems)) parsedRems = [parsedRems];
+        } catch(e) {
+          // Not JSON, treat as single reminder string
+          parsedRems = [l.reminders];
+        }
+      }
+      console.log('Parsed reminders:', parsedRems);
+      
       return {
         id:      l.id,
-        periods: l.periods || '',  // ADDED: preserve periods for multi-class lessons
+        periods: l.periods || '',
         unit:    l.unit    || 'Uncategorized',
         name:    l.title   || l.name || 'Untitled',
         multi:   false,
@@ -769,7 +819,7 @@ function loadLessonsFromSheets(period) {
         agenda:  Array.isArray(l.agenda)        ? l.agenda        : [],
         pres:    Array.isArray(l.presentations) ? l.presentations.map(function(p){ return {l: p.label||p.l||'', url: p.url||'', t:'slides'}; }) : [],
         vids:    Array.isArray(l.videos)        ? l.videos.map(function(v){ return {l: v.label||v.l||'', url: v.url||'', t:'yt'}; }) : [],
-        rems:    Array.isArray(l.reminders)     ? l.reminders     : [],
+        rems:    parsedRems,
         debrief: [],
         imageUrl: l.imageUrl || ''
       };
