@@ -1345,18 +1345,10 @@ function saveCurrentLesson(){
   console.log('Saving lesson:', les.name, 'to period:', period, 'scheduleIdx:', scheduleIdx);
   console.log('Lesson data:', {qotd: les.qotd, agenda: les.agenda, rems: les.rems});
   
-  // Preserve existing periods and add current period if not already present
-  var existingPeriods = les.periods || '';
-  var periodsArray = existingPeriods.split(',').map(function(p){ return p.trim(); }).filter(Boolean);
-  if (periodsArray.indexOf(period) === -1) {
-    periodsArray.push(period);
-  }
-  var combinedPeriods = periodsArray.join(',');
-  console.log('Combined periods:', combinedPeriods);
-  
+  // Each period has its own lessons - no sharing between classes
   var payload={
     id: les.id,
-    periods: combinedPeriods,
+    periods: period,  // Just this period, no combining
     unit: les.unit||'',
     title: les.name||les.title||'',
     qotd: les.qotd||'',
