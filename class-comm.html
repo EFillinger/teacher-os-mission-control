@@ -759,7 +759,41 @@ function loadRosterFromSheets(period) {
     if(idx === curClsIdx){ refreshAllScreens(); }
     var firstStudent = res.students[0] ? (res.students[0].firstName + ' ' + res.students[0].lastName) : 'none';
     showStatus('Roster loaded: ' + res.students.length + ' students for ' + period + ' | idx=' + idx + ' curClsIdx=' + curClsIdx + ' | first: ' + firstStudent);
+    // Now load question history for this class
+    loadQuestionHistoryFromSheets(period);
   }).catch(function(e) { showStatus('Roster fetch failed: ' + e.toString(), '#3a0a0a'); });
+}
+
+function loadQuestionHistoryFromSheets(period) {
+  sheetsGet({ action: 'getQuestionHistory', period: period }).then(function(res) {
+    if (res.error) { console.warn('Question history error:', res.error); return; }
+    if (!res.history) { console.log('No question history for', period); return; }
+    
+    var idx = schedule.findIndex(function(s){ return s.period === period; });
+    if (idx < 0) return;
+    
+    // Map student names to their index in the students array
+    var students = classData[idx].students || [];
+    var history = res.history; // { "Student Name": ["g", "y", "r", ...], ... }
+    
+    // Initialize history object if needed
+    if (!classData[idx].history) classData[idx].history = {};
+    
+    // For each student, find their history by name
+    students.forEach(function(name, studentIdx) {
+      if (history[name] && history[name].length > 0) {
+        classData[idx].history[studentIdx] = history[name];
+      }
+    });
+    
+    console.log('Loaded question history for', period, ':', classData[idx].history);
+    showStatus('Question history loaded for ' + period);
+    
+    // Rebuild sidebar to show updated tiers
+    if (idx === curClsIdx) {
+      buildSidebar();
+    }
+  }).catch(function(e) { console.warn('Question history fetch failed:', e); });
 }
 
 function loadLessonsFromSheets(period) {
@@ -989,10 +1023,12 @@ function buildClsBtns(){
   });
 }
 function switchClass(idx){
+  console.log('switchClass called with idx:', idx, '| schedule[idx]:', schedule[idx]);
   curClsIdx=idx;
   getActivePeriods().forEach(function(i){var b=document.getElementById('clsbtn-'+i);if(b)styleClsBtn(b,i===idx);});
   loadClassData();
   var period=schedule[idx]&&schedule[idx].period;
+  console.log('switchClass: loading data for period:', period);
   if(period){loadRosterFromSheets(period);loadLessonsFromSheets(period);}
 }
 
@@ -1073,7 +1109,7 @@ function closeBehavior(){document.getElementById('behavior-modal').classList.rem
 function snStyle(done){return done?'border:1px solid #4db84d;background:#1a3a1a;color:#4db84d;':'border:1px solid #333;background:#2a2a2a;color:#888;';}
 function buildSNCompact(){var cls=classData[curClsIdx],el=document.getElementById('sn-compact-btns');el.innerHTML='';cls.sn.forEach(function(s,i){var b=document.createElement('div');b.className='snbtn';b.style.cssText=snStyle(s.done);b.textContent=s.name;(function(idx){b.onclick=function(){openSN(idx);};})(i);el.appendChild(b);});}
 function buildSNExpanded(){var cls=classData[curClsIdx],el=document.getElementById('sn-expanded-btns');if(!el)return;el.innerHTML='';cls.sn.forEach(function(s,i){var b=document.createElement('div');b.className='snbtnlg';b.style.cssText=snStyle(s.done);var items='<div style="font-size:9px;color:#555;margin-top:3px;text-align:left;line-height:1.6;">';s.items.forEach(function(it){items+='<span style="color:'+(it.done?'#4db84d':'#555')+'">'+(it.done?'✓':'○')+' '+it.text+'</span><br>';});items+='</div>';b.innerHTML='<strong>'+s.name+'</strong>'+items;(function(idx){b.onclick=function(){openSN(idx);};})(i);el.appendChild(b);});}
-function openSN(idx){var cls=classData[curClsIdx];snActiveIdx=idx;var s=cls.sn[idx];document.getElementById('sn-name').textContent=s.name.toUpperCase();var el=document.getElementById('sn-items');el.innerHTML='';s.items.forEach(function(it,j){var d=document.createElement('div');d.className='snchkitem';d.style.color=it.done?'#4db84d':'#888';d.innerHTML='<div style="width:12px;height:12px;border:1px solid '+(it.done?'#4db84d':'#444')+';border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#4db84d;flex-shrink:0;">'+(it.done?'✓':'')+'</div>'+it.text;(function(jj){d.onclick=function(){s.items[jj].done=!s.items[jj].done;s.done=s.items.every(function(x){return x.done;});buildSNCompact();buildSNExpanded();openSN(idx);updateCloseSummary();};})(j);el.appendChild(d);});document.getElementById('sn-modal').classList.add('on');}
+function openSN(idx){var cls=classData[curClsIdx];snActiveIdx=idx;var s=cls.sn[idx];document.getElementById('sn-name').textContent=s.name.toUpperCase();var el=document.getElementById('sn-items');el.innerHTML='';s.items.forEach(function(it,j){var d=document.createElement('div');d.className='snchkitem';d.style.color=it.done?'#4db84d':'#888';d.innerHTML='<div style="width:12px;height:12px;border:1px solid '+(it.done?'#4db84d':'#444')+';border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#4db84d;flex-shrink:0;">'+(it.done?'✓':'')+'</div>'+it.text;(function(jj){d.onclick=function(){s.items[jj].done=!s.items[jj].done;s.done=s.items.every(function(x){return x.done;});var period=schedule[curClsIdx]&&schedule[curClsIdx].period;logSessionToSheets(period,s.name,'','accommodation',s.items[jj].text + (s.items[jj].done ? ' - COMPLETED' : ' - UNCHECKED'));buildSNCompact();buildSNExpanded();openSN(idx);updateCloseSummary();};})(j);el.appendChild(d);});document.getElementById('sn-modal').classList.add('on');}
 function closeSN(){document.getElementById('sn-modal').classList.remove('on');snActiveIdx=null;}
 
 function buildPickQueue(){var cls=classData[curClsIdx],uncalled=[],struggling=[],mixed=[],rest=[];cls.students.forEach(function(n,i){var hist=cls.history[i]||[],tier=calcTier(hist);if(!hist.length)uncalled.push(i);else if(tier==='r'||tier==='o')struggling.push(i);else if(tier==='y')mixed.push(i);else rest.push(i);});function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}pickQueue=shuffle(uncalled).concat(shuffle(struggling)).concat(shuffle(mixed)).concat(shuffle(rest));}
@@ -1143,7 +1179,62 @@ function launchProjector(){
 
 function openExport(type){exportType=type;document.getElementById('export-title').textContent='EXPORT — '+type.toUpperCase();document.getElementById('export-modal').classList.add('on');}
 function closeExport(){document.getElementById('export-modal').classList.remove('on');}
-function doExport(range){closeExport();var rangeLabel={today:'Today',week:'This Week',all:'All Time'}[range];alert('Exporting '+exportType+' — '+rangeLabel+'\n\n(Google Sheets connection coming soon — will download as text file)');}
+function doExport(range){
+  closeExport();
+  var period = schedule[curClsIdx] && schedule[curClsIdx].period;
+  var className = schedule[curClsIdx] && schedule[curClsIdx].sub;
+  
+  // Determine which action to call based on export type
+  var action = '';
+  if (exportType === 'Accommodations Log') action = 'getSessionLogs';
+  else if (exportType === 'Question Log') action = 'getQuestionLog';
+  else if (exportType === 'Behavior Log') action = 'getSessionLogs';
+  
+  showStatus('Fetching ' + exportType + '...');
+  
+  sheetsGet({ action: action, period: period, range: range, logType: exportType }).then(function(res) {
+    if (res.error) {
+      showStatus('Export error: ' + res.error, '#3a0a0a');
+      return;
+    }
+    
+    var data = res.logs || res.questions || [];
+    if (!data.length) {
+      showStatus('No data found for ' + exportType);
+      alert('No ' + exportType + ' data found for ' + className + ' (' + range + ')');
+      return;
+    }
+    
+    // Build CSV content
+    var csv = '';
+    if (exportType === 'Question Log') {
+      csv = 'Date,Period,Student,Result,Score\n';
+      data.forEach(function(row) {
+        csv += '"' + (row.date||'') + '","' + (row.period||'') + '","' + (row.studentName||'') + '","' + (row.result||'') + '",' + (row.score||0) + '\n';
+      });
+    } else {
+      csv = 'Date,Period,Student,Event Type,Note\n';
+      data.forEach(function(row) {
+        csv += '"' + (row.date||'') + '","' + (row.period||'') + '","' + (row.studentName||'') + '","' + (row.eventType||'') + '","' + (row.note||'').replace(/"/g,'""') + '"\n';
+      });
+    }
+    
+    // Download as file
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = exportType.replace(/ /g, '_') + '_' + period + '_' + range + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showStatus('Exported ' + data.length + ' records');
+  }).catch(function(e) {
+    showStatus('Export failed: ' + e, '#3a0a0a');
+  });
+}
 
 function saveDebrief(){var note=document.getElementById('debrief-text').value.trim();if(!note)return;var now=new Date();var dateStr=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});alert('Debrief note saved for current lesson:\n\n"'+note+'"');document.getElementById('debrief-text').value='';document.getElementById('debrief-modal').classList.remove('on');}
 
