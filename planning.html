@@ -404,7 +404,7 @@ body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#888;displ
 // ══════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7IKheLtXlVgJznD33z92DHp6iC5ql0KSY8ALwfS_gjaUO2EHdsEIv_QIAf1nbpE88VA/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjzDROWXOk5ppYqKsLwonDABKNMldJ4Uexuob5Ft6l9ypp0SEr_9zpiq9rrqJHHMvX6w/exec';
 
 // ══════════════════════════════════════════════════
 // STATE
@@ -600,44 +600,43 @@ function newCurriculum() {
 // ══════════════════════════════════════════════════
 // LAYER 2 — UNITS
 // ══════════════════════════════════════════════════
-var SAMPLE_UNITS = {
-  cur_uas: [
-    { id:'u_uas_01', name:'Introduction & Safety',      order:1, target_days:8,  done:8,  total:8,  status:'done' },
-    { id:'u_uas_02', name:'Regulations & Airspace',     order:2, target_days:10, done:10, total:10, status:'done' },
-    { id:'u_uas_03', name:'Flight Principles',          order:3, target_days:10, done:10, total:10, status:'done' },
-    { id:'u_uas_04', name:'UAS Operations',             order:4, target_days:12, done:6,  total:12, status:'active' },
-    { id:'u_uas_05', name:'Maintenance & Repair',       order:5, target_days:8,  done:0,  total:8,  status:'upcoming' },
-    { id:'u_uas_06', name:'Mission Planning',           order:6, target_days:8,  done:0,  total:8,  status:'upcoming' },
-    { id:'u_uas_07', name:'Data Collection & Analysis', order:7, target_days:6,  done:0,  total:6,  status:'upcoming' },
-    { id:'u_uas_08', name:'Capstone Project',           order:8, target_days:6,  done:0,  total:6,  status:'upcoming' },
-  ],
-  cur_rc: [
-    { id:'u_rc_01', name:'RC Fundamentals',     order:1, target_days:8, done:0, total:8, status:'upcoming' },
-    { id:'u_rc_02', name:'Aircraft Systems',    order:2, target_days:8, done:0, total:8, status:'upcoming' },
-    { id:'u_rc_03', name:'Flight Skills',       order:3, target_days:10, done:0, total:10, status:'upcoming' },
-    { id:'u_rc_04', name:'Competition Prep',    order:4, target_days:8, done:0, total:8, status:'upcoming' },
-    { id:'u_rc_05', name:'Final Project',       order:5, target_days:6, done:0, total:6, status:'upcoming' },
-  ],
-  cur_avn: [
-    { id:'u_avn_01', name:'History of Aviation',    order:1, target_days:8, done:8, total:8, status:'done' },
-    { id:'u_avn_02', name:'Aerodynamics',           order:2, target_days:10, done:5, total:10, status:'active' },
-    { id:'u_avn_03', name:'Aircraft Systems',       order:3, target_days:8, done:0, total:8, status:'upcoming' },
-    { id:'u_avn_04', name:'Navigation',             order:4, target_days:8, done:0, total:8, status:'upcoming' },
-    { id:'u_avn_05', name:'Weather',                order:5, target_days:6, done:0, total:6, status:'upcoming' },
-    { id:'u_avn_06', name:'Career Pathways',        order:6, target_days:6, done:0, total:6, status:'upcoming' },
-  ],
-  cur_innov: [
-    { id:'u_innov_01', name:'Advanced UAS Systems',   order:1, target_days:8, done:8, total:8, status:'done' },
-    { id:'u_innov_02', name:'Sensor Integration',     order:2, target_days:8, done:8, total:8, status:'done' },
-    { id:'u_innov_03', name:'Autonomous Operations',  order:3, target_days:10, done:4, total:10, status:'active' },
-    { id:'u_innov_04', name:'Data Analytics',         order:4, target_days:8, done:0, total:8, status:'upcoming' },
-    { id:'u_innov_05', name:'Industry Applications',  order:5, target_days:8, done:0, total:8, status:'upcoming' },
-    { id:'u_innov_06', name:'Capstone Project',       order:6, target_days:8, done:0, total:8, status:'upcoming' },
-  ],
-};
+// Units are loaded from Google Sheets — starts empty, populated on drill-in
+var SAMPLE_UNITS = {};
 
 function renderL2() {
   var curId = state.selCurId;
+  var names = { cur_uas:'UAS', cur_rc:'INTRO TO RC', cur_avn:'INTRO TO AVIATION', cur_innov:'UAS INNOVATIONS' };
+  document.getElementById('l2-title').textContent = (names[curId] || curId) + ' — UNITS';
+
+  // Load units from Sheets if not already cached
+  if (!SAMPLE_UNITS[curId]) {
+    document.getElementById('unit-list').innerHTML = '<div class="empty-state">LOADING...</div>';
+    showStatus('Loading units...');
+    sheetsGet({ action:'getUnits', curriculum_id: curId }).then(function(res) {
+      if (res.error || !res.units) {
+        SAMPLE_UNITS[curId] = [];
+      } else {
+        SAMPLE_UNITS[curId] = res.units.map(function(u) {
+          return {
+            id: u.id, name: u.name, order: u.order,
+            target_days: u.target_days || null,
+            done: 0, total: 0, status: 'upcoming',
+          };
+        });
+      }
+      renderUnitList(curId);
+      showStatus('READY', 'ok');
+    }).catch(function() {
+      SAMPLE_UNITS[curId] = [];
+      renderUnitList(curId);
+      showStatus('Could not load units', 'err');
+    });
+    return;
+  }
+  renderUnitList(curId);
+}
+
+function renderUnitList(curId) {
   var names = { cur_uas:'UAS', cur_rc:'INTRO TO RC', cur_avn:'INTRO TO AVIATION', cur_innov:'UAS INNOVATIONS' };
   document.getElementById('l2-title').textContent = (names[curId] || curId) + ' — UNITS';
   var units = SAMPLE_UNITS[curId] || [];
@@ -666,33 +665,15 @@ function renderL2() {
 }
 
 function newUnit() {
-  showStatus('New unit — wire to Sheets in full build', '');
+  showStatus('New unit — coming in next build', '');
 }
 
 // ══════════════════════════════════════════════════
 // LAYER 3 — LESSON EDITOR
 // ══════════════════════════════════════════════════
-var SAMPLE_LESSONS = {
-  u_uas_04: [
-    { id:'l_uas_04_01', title:'Day 1 — Overview',          order:1, status:'done', date:'APR 7',  qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_02', title:'Day 2 — Pre-flight',        order:2, status:'done', date:'APR 9',  qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_03', title:'Day 3 — Launch Procedures', order:3, status:'done', date:'APR 11', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_04', title:'Day 4 — Flight Ops',        order:4, status:'done', date:'APR 14', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_05', title:'Day 5 — Emergency Proc.',   order:5, status:'done', date:'APR 16', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_06', title:'Day 6 — Post-flight',       order:6, status:'done', date:'APR 18', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_07', title:'Day 7 — Airspace Auth.',    order:7, status:'active', date:'APR 24',
-      qotd:'What is the difference between LAANC and a full Part 107 waiver?',
-      agenda:['Review LAANC authorization process','Demo: AirMap / Aloft app','Student practice: file a simulated auth','Q&A and debrief'],
-      presentations:[{l:'LAANC Overview Slides', url:''}],
-      videos:[{l:'How to use AirMap', url:''}],
-      reminders:['Have students open Aloft on their phones'] },
-    { id:'l_uas_04_08', title:'Day 8 — Field Ops',         order:8, status:'upcoming', date:'APR 28', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_09', title:'Day 9 — Night Ops',         order:9, status:'upcoming', date:'APR 30', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_10', title:'Day 10 — Review',           order:10, status:'upcoming', date:'MAY 2', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_11', title:'Day 11 — Assessment',       order:11, status:'upcoming', date:'MAY 5', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-    { id:'l_uas_04_12', title:'Day 12 — Wrap-up',          order:12, status:'upcoming', date:'MAY 7', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
-  ],
-};
+// Lessons are loaded from Google Sheets — this starts empty
+// and populates as you drill into units
+var SAMPLE_LESSONS = {};
 
 var activeLessonData = null; // working copy of current lesson
 
@@ -706,12 +687,34 @@ function goToLessons(unitId, unitName) {
     { label:curName, onclick:"goToUnits('" + state.selCurId + "');" },
     { label: unitName.toUpperCase() }
   ]);
-  renderLessonList(unitId);
-  // Auto-select today's / active lesson
-  var lessons = SAMPLE_LESSONS[unitId] || [];
-  var active = lessons.find(function(l) { return l.status === 'active'; });
-  if (active) loadLesson(active.id);
-  else renderEditorEmpty();
+  // Load lessons from Sheets for this unit
+  loadLessonsFromSheets(unitId, unitName);
+}
+
+function loadLessonsFromSheets(unitId, unitName) {
+  showStatus('Loading lessons for ' + unitName + '...');
+  document.getElementById('ll-scroll').innerHTML = '<div style="padding:10px 9px;font-size:10px;color:#333;letter-spacing:1px;">LOADING...</div>';
+  renderEditorEmpty();
+  sheetsGet({ action:'getLessons', unit_id: unitId }).then(function(res) {
+    if (res.error) {
+      showStatus('Lessons load error: ' + res.error, 'err');
+      SAMPLE_LESSONS[unitId] = [];
+      renderLessonList(unitId);
+      return;
+    }
+    SAMPLE_LESSONS[unitId] = res.lessons || [];
+    renderLessonList(unitId);
+    // Auto-select today's / active lesson
+    var lessons = SAMPLE_LESSONS[unitId];
+    var active = lessons.find(function(l) { return l.status === 'active'; });
+    if (active) loadLesson(active.id);
+    else renderEditorEmpty();
+    showStatus('Loaded ' + lessons.length + ' lessons', 'ok');
+  }).catch(function() {
+    SAMPLE_LESSONS[unitId] = [];
+    renderLessonList(unitId);
+    showStatus('Could not reach Sheets', 'err');
+  });
 }
 
 function renderLessonList(unitId) {
