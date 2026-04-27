@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roster Migration Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#888;padding:30px;min-height:100vh;}
+.wrap{max-width:800px;margin:0 auto;}
+h1{font-family:'Orbitron',monospace;font-size:16px;color:#00ccff;letter-spacing:3px;margin-bottom:4px;}
+.sub{font-size:10px;color:#336;letter-spacing:2px;margin-bottom:24px;}
+.card{background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:16px;margin-bottom:14px;}
+.card-title{font-size:10px;letter-spacing:2px;color:#444;margin-bottom:10px;}
+.step{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.step-num{width:22px;height:22px;border-radius:50%;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:10px;color:#555;flex-shrink:0;margin-top:1px;}
+.step-num.done{border-color:#4db84d;color:#4db84d;background:#0a1f0a;}
+.step-num.active{border-color:#c8a800;color:#c8a800;background:#1a1500;}
+.step-body{flex:1;}
+.step-label{font-size:12px;color:#888;margin-bottom:4px;}
+.step-note{font-size:10px;color:#333;letter-spacing:0.5px;line-height:1.6;}
+.inp{width:100%;background:#151515;border:1px solid #1e1e1e;border-radius:2px;padding:6px 10px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none;margin-top:6px;}
+.inp:focus{border-color:#444;}
+.btn{padding:6px 16px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;border:1px solid #2a2a2a;background:#151515;color:#555;margin-top:8px;}
+.btn:hover{color:#888;border-color:#444;}
+.btn-go{border-color:#2d8c2d;background:#0a1f0a;color:#4db84d;}
+.btn-go:hover{background:#142a14;}
+.btn-go:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-amber{border-color:#443300;background:#1a1500;color:#c8a800;}
+.log{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:3px;padding:10px;margin-top:10px;font-size:11px;line-height:1.8;max-height:300px;overflow-y:auto;min-height:60px;}
+.log .ok{color:#4db84d;}
+.log .err{color:#c03030;}
+.log .warn{color:#c8a800;}
+.log .info{color:#336;}
+.log .dim{color:#333;}
+.progress{height:3px;background:#1a1a1a;border-radius:2px;margin-top:8px;}
+.progress-bar{height:3px;background:#c8a800;border-radius:2px;width:0%;transition:width 0.3s;}
+.class-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.class-card{background:#0f0f0f;border:1px solid #1a1a1a;border-radius:3px;padding:8px 10px;}
+.cc-name{font-size:11px;color:#888;margin-bottom:2px;}
+.cc-count{font-size:10px;color:#4db84d;}
+.cc-count.zero{color:#333;}
+.status-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:2px;letter-spacing:1px;margin-left:6px;}
+.sb-ok{background:#0a1f0a;color:#4db84d;border:1px solid #1a3a1a;}
+.sb-wait{background:#1a1500;color:#c8a800;border:1px solid #2a2200;}
+.sb-err{background:#1a0a0a;color:#c03030;border:1px solid #3a1a1a;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ROSTER MIGRATION TOOL</h1>
+  <div class="sub">MISSION CONTROL — ONE TIME SETUP</div>
+
+  <!-- STEP 1: URL -->
+  <div class="card">
+    <div class="card-title">STEP 1 — CONFIGURE</div>
+    <div class="step">
+      <div class="step-num active" id="sn1">1</div>
+      <div class="step-body">
+        <div class="step-label">Google Apps Script URL</div>
+        <div class="step-note">Paste your deployed script URL below. This is the same URL used in Class Comm and Planning.</div>
+        <input class="inp" id="script-url" type="text" placeholder="https://script.google.com/macros/s/..." />
+        <div style="margin-top:8px;">
+          <button class="btn btn-go" onclick="testConnection()">▶ TEST CONNECTION</button>
+          <span id="conn-status" style="font-size:10px;color:#333;margin-left:10px;letter-spacing:1px;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: READ OLD ROSTERS -->
+  <div class="card">
+    <div class="card-title">STEP 2 — READ EXISTING ROSTERS</div>
+    <div class="step">
+      <div class="step-num" id="sn2">2</div>
+      <div class="step-body">
+        <div class="step-label">Load students from old roster tabs</div>
+        <div class="step-note">Reads Roster_P1, Roster_P2, Roster_P3, Roster_P5, Roster_P7 one at a time. Each call is small and fast — no timeout risk.</div>
+        <button class="btn btn-amber" id="btn-read" onclick="readAllRosters()" disabled>↓ READ OLD ROSTERS</button>
+        <div class="progress"><div class="progress-bar" id="read-prog"></div></div>
+        <div class="log" id="read-log"><span class="dim">Waiting...</span></div>
+        <div class="class-grid" id="read-results"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: WRITE NEW ROSTERS -->
+  <div class="card">
+    <div class="card-title">STEP 3 — WRITE TO NEW ROSTERS TAB</div>
+    <div class="step">
+      <div class="step-num" id="sn3">3</div>
+      <div class="step-body">
+        <div class="step-label">Write students into unified Rosters tab</div>
+        <div class="step-note">Sends each class roster separately using the new updateRoster action. Small payloads, no timeouts.</div>
+        <button class="btn btn-go" id="btn-write" onclick="writeAllRosters()" disabled>▶ WRITE TO ROSTERS TAB</button>
+        <div class="progress"><div class="progress-bar" id="write-prog"></div></div>
+        <div class="log" id="write-log"><span class="dim">Waiting...</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: VERIFY -->
+  <div class="card">
+    <div class="card-title">STEP 4 — VERIFY</div>
+    <div class="step">
+      <div class="step-num" id="sn4">4</div>
+      <div class="step-body">
+        <div class="step-label">Confirm migration looks correct</div>
+        <div class="step-note">Reads back the new Rosters tab and shows counts per class. Compare to your original rosters.</div>
+        <button class="btn" id="btn-verify" onclick="verifyRosters()" disabled>✓ VERIFY MIGRATION</button>
+        <div class="log" id="verify-log"><span class="dim">Waiting...</span></div>
+        <div class="class-grid" id="verify-results"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var SCRIPT_URL = '';
+var collectedRosters = {}; // { classId: [student rows] }
+
+// Old tab name → new class ID mapping
+var TAB_MAP = [
+  { tab: 'Roster_P1', classId: 'cls_p1_a',  label: 'P1 · UAS (A Day)' },
+  { tab: 'Roster_P2', classId: 'cls_p2_a',  label: 'P2 · Intro RC (A Day)' },
+  { tab: 'Roster_P3', classId: 'cls_p3_a',  label: 'P3 · UAS Innov. (A Day)' },
+  { tab: 'Roster_P5', classId: 'cls_p5_s1', label: 'P5 · Aviation S1 (B Day)' },
+  { tab: 'Roster_P7', classId: 'cls_p7_b',  label: 'P7 · UAS (B Day)' },
+];
+
+// ── HELPERS ──────────────────────────────────────────────────
+function log(elId, msg, cls) {
+  var el = document.getElementById(elId);
+  var line = document.createElement('div');
+  line.className = cls || '';
+  line.textContent = msg;
+  if (el.querySelector('.dim')) el.innerHTML = '';
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setProgress(elId, pct) {
+  document.getElementById(elId).style.width = pct + '%';
+}
+
+function setStepActive(n) {
+  for (var i = 1; i <= 4; i++) {
+    var el = document.getElementById('sn' + i);
+    if (i < n)       { el.className = 'step-num done'; el.textContent = '✓'; }
+    else if (i === n) { el.className = 'step-num active'; el.textContent = String(i); }
+    else              { el.className = 'step-num'; el.textContent = String(i); }
+  }
+}
+
+function sheetsGet(params) {
+  var url = SCRIPT_URL + '?' + Object.keys(params).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  return fetch(url).then(function(r) { return r.json(); });
+}
+
+function sheetsPost(data) {
+  return fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); });
+}
+
+// ── STEP 1: TEST CONNECTION ───────────────────────────────────
+async function testConnection() {
+  var urlEl = document.getElementById('script-url');
+  SCRIPT_URL = urlEl.value.trim();
+  if (!SCRIPT_URL) { alert('Please paste your script URL first.'); return; }
+
+  var status = document.getElementById('conn-status');
+  status.textContent = 'TESTING...';
+  status.style.color = '#c8a800';
+
+  try {
+    var res = await sheetsGet({ action: 'getSchedule' });
+    if (res.error) throw new Error(res.error);
+    status.textContent = '✓ CONNECTED';
+    status.style.color = '#4db84d';
+    document.getElementById('btn-read').disabled = false;
+    setStepActive(2);
+  } catch(e) {
+    status.textContent = '✕ FAILED: ' + e.message;
+    status.style.color = '#c03030';
+  }
+}
+
+// ── STEP 2: READ OLD ROSTERS ──────────────────────────────────
+async function readAllRosters() {
+  document.getElementById('btn-read').disabled = true;
+  document.getElementById('read-results').innerHTML = '';
+  collectedRosters = {};
+  setStepActive(2);
+
+  for (var i = 0; i < TAB_MAP.length; i++) {
+    var entry = TAB_MAP[i];
+    setProgress('read-prog', Math.round((i / TAB_MAP.length) * 100));
+    log('read-log', 'Reading ' + entry.tab + '...', 'info');
+
+    try {
+      // Use the legacy getRoster action that reads by period
+      var period = entry.tab.replace('Roster_', ''); // P1, P2, etc.
+      var res = await sheetsGet({ action: 'getRoster', period: period });
+
+      if (res.error) {
+        log('read-log', '  ⚠ ' + entry.tab + ': ' + res.error, 'warn');
+        collectedRosters[entry.classId] = [];
+        addReadCard(entry, 0, 'warn');
+        continue;
+      }
+
+      var students = res.students || [];
+      // Convert old format to new format
+      collectedRosters[entry.classId] = students.map(function(s, idx) {
+        var id = s.id ? String(s.id) : ('stu_' + entry.classId + '_' + String(idx + 1).padStart(3,'0'));
+        return {
+          id:            id,
+          class_id:      entry.classId,
+          first_name:    s.firstName  || '',
+          last_name:     s.lastName   || '',
+          display_name:  (s.firstName + ' ' + s.lastName).trim(),
+          accommodations: s.accommodations || '',
+          notes:         ''
+        };
+      });
+
+      log('read-log', '  ✓ ' + entry.tab + ': ' + students.length + ' students', 'ok');
+      addReadCard(entry, students.length, 'ok');
+
+    } catch(e) {
+      log('read-log', '  ✕ ' + entry.tab + ': ' + e.message, 'err');
+      collectedRosters[entry.classId] = [];
+      addReadCard(entry, 0, 'err');
+    }
+
+    // Small delay between requests to avoid rate limiting
+    await sleep(400);
+  }
+
+  setProgress('read-prog', 100);
+  var total = Object.values(collectedRosters).reduce(function(s, arr) { return s + arr.length; }, 0);
+  log('read-log', '─────────────────────────────', 'dim');
+  log('read-log', 'TOTAL: ' + total + ' students read across all classes', 'ok');
+
+  if (total > 0) {
+    document.getElementById('btn-write').disabled = false;
+    setStepActive(3);
+  } else {
+    log('read-log', 'No students found — check your script URL and tab names', 'warn');
+  }
+}
+
+function addReadCard(entry, count, status) {
+  var grid = document.getElementById('read-results');
+  var card = document.createElement('div');
+  card.className = 'class-card';
+  var badge = status === 'ok' ? '<span class="status-badge sb-ok">OK</span>' :
+              status === 'warn' ? '<span class="status-badge sb-wait">SKIP</span>' :
+              '<span class="status-badge sb-err">ERR</span>';
+  card.innerHTML = '<div class="cc-name">' + entry.label + badge + '</div>' +
+    '<div class="cc-count' + (count === 0 ? ' zero' : '') + '">' + count + ' students</div>';
+  grid.appendChild(card);
+}
+
+// ── STEP 3: WRITE TO NEW ROSTERS TAB ─────────────────────────
+async function writeAllRosters() {
+  document.getElementById('btn-write').disabled = true;
+  setStepActive(3);
+
+  var entries = Object.keys(collectedRosters);
+  for (var i = 0; i < entries.length; i++) {
+    var classId  = entries[i];
+    var students = collectedRosters[classId];
+    var label    = (TAB_MAP.find(function(t) { return t.classId === classId; }) || {}).label || classId;
+
+    setProgress('write-prog', Math.round((i / entries.length) * 100));
+
+    if (!students.length) {
+      log('write-log', 'SKIP ' + label + ' — no students', 'dim');
+      continue;
+    }
+
+    log('write-log', 'Writing ' + students.length + ' students to ' + label + '...', 'info');
+
+    try {
+      var res = await sheetsPost({
+        action:   'updateRoster',
+        class_id: classId,
+        data:     students
+      });
+
+      if (res.error) {
+        log('write-log', '  ✕ ' + label + ': ' + res.error, 'err');
+      } else {
+        log('write-log', '  ✓ ' + label + ': ' + students.length + ' students written', 'ok');
+      }
+    } catch(e) {
+      log('write-log', '  ✕ ' + label + ': ' + e.message, 'err');
+    }
+
+    await sleep(600);
+  }
+
+  setProgress('write-prog', 100);
+  log('write-log', '─────────────────────────────', 'dim');
+  log('write-log', 'WRITE COMPLETE — run verification below', 'ok');
+  document.getElementById('btn-verify').disabled = false;
+  setStepActive(4);
+}
+
+// ── STEP 4: VERIFY ────────────────────────────────────────────
+async function verifyRosters() {
+  document.getElementById('verify-results').innerHTML = '';
+  log('verify-log', 'Reading back Rosters tab...', 'info');
+
+  var total = 0;
+  for (var i = 0; i < TAB_MAP.length; i++) {
+    var entry = TAB_MAP[i];
+    try {
+      var res = await sheetsGet({ action: 'getRoster', class_id: entry.classId });
+      var count = res.students ? res.students.length : 0;
+      total += count;
+
+      var card = document.createElement('div');
+      card.className = 'class-card';
+      var match = collectedRosters[entry.classId] && collectedRosters[entry.classId].length === count;
+      var badge = match ? '<span class="status-badge sb-ok">✓ MATCH</span>' : '<span class="status-badge sb-wait">CHECK</span>';
+      card.innerHTML = '<div class="cc-name">' + entry.label + badge + '</div>' +
+        '<div class="cc-count' + (count === 0 ? ' zero' : '') + '">' + count + ' students in new Rosters tab</div>';
+      document.getElementById('verify-results').appendChild(card);
+
+      log('verify-log', entry.label + ': ' + count + ' students ' + (match ? '✓' : '⚠ count mismatch'), match ? 'ok' : 'warn');
+    } catch(e) {
+      log('verify-log', entry.label + ': ERROR — ' + e.message, 'err');
+    }
+    await sleep(400);
+  }
+
+  log('verify-log', '─────────────────────────────', 'dim');
+  log('verify-log', 'TOTAL in new Rosters tab: ' + total + ' students', 'ok');
+  log('verify-log', '', 'dim');
+  log('verify-log', 'If counts match ✓ your migration is complete!', 'ok');
+  log('verify-log', 'You can now delete the old Roster_P* tabs or rename them to *_ARCHIVED.', 'info');
+}
+
+// ── UTILITY ───────────────────────────────────────────────────
+function sleep(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+</script>
+</body>
+</html>
