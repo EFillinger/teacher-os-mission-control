@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning — Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#888;display:flex;flex-direction:column;}
+
+/* ── TOP BAR ─────────────────────────────────────── */
+.topbar{background:#080808;border-bottom:1px solid #1e1e1e;padding:6px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;height:46px;}
+.mc-name{font-family:'Orbitron',monospace;font-size:15px;font-weight:600;color:#00ccff;letter-spacing:3px;}
+.mc-sub{font-size:9px;color:#336;letter-spacing:3px;margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.wx-block{display:flex;align-items:center;gap:10px;}
+.wx-temp{font-size:17px;font-weight:600;color:#00ccff;letter-spacing:1px;}
+.wx-details{display:flex;flex-direction:column;gap:1px;}
+.wx-row{font-size:10px;color:#444;letter-spacing:1px;}
+.wx-val{color:#888;}
+.vdiv{width:1px;height:28px;background:#222;flex-shrink:0;}
+.dt-time{font-size:17px;font-weight:600;color:#888;letter-spacing:2px;line-height:1;}
+.dt-date{font-size:9px;color:#444;margin-top:2px;letter-spacing:1px;text-align:right;}
+
+/* ── NAV ─────────────────────────────────────────── */
+.nav{display:flex;gap:4px;background:#080808;border-bottom:1px solid #222;padding:5px 14px;flex-shrink:0;height:36px;align-items:center;}
+.nb{font-size:11px;padding:3px 12px;border-radius:3px;border:1px solid #2a2a2a;background:#151515;color:#555;cursor:pointer;letter-spacing:1px;font-family:'Share Tech Mono',monospace;white-space:nowrap;text-decoration:none;display:inline-block;}
+.nb:hover{border-color:#00ccff;color:#00ccff;background:#002a33;}
+.nb.active{border-color:#c8a800;background:#1a1500;color:#c8a800;}
+
+/* ── LAYOUT ──────────────────────────────────────── */
+.body{display:flex;flex:1;overflow:hidden;}
+
+/* ── LEFT SIDEBAR ────────────────────────────────── */
+.lsidebar{width:190px;background:#0f0f0f;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.ls-hdr{font-family:'Orbitron',monospace;font-size:11px;color:#c8a800;letter-spacing:2px;padding:8px 12px 6px;border-bottom:1px solid #1a1a1a;flex-shrink:0;}
+.ls-section{border-bottom:1px solid #1a1a1a;padding-bottom:4px;}
+.ls-label{font-size:9px;letter-spacing:2px;color:#333;padding:7px 12px 3px;}
+.ls-item{display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:11px;color:#555;cursor:pointer;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ls-item:hover{background:#151515;color:#888;}
+.ls-item.active{color:#c8a800;background:#1a1500;}
+.ls-item.roster-active{color:#00ccff;background:#002a33;}
+.ls-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ls-add{font-size:10px;color:#2a2a2a;padding:4px 12px;cursor:pointer;letter-spacing:1px;}
+.ls-add:hover{color:#555;}
+
+/* ── MAIN CONTENT ────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.breadcrumb{display:flex;align-items:center;gap:5px;padding:5px 14px;border-bottom:1px solid #1a1a1a;background:#0d0d0d;flex-shrink:0;font-size:10px;letter-spacing:1px;flex-wrap:wrap;}
+.bc{color:#333;cursor:pointer;}
+.bc:hover{color:#888;}
+.bc.active{color:#c8a800;}
+.bc-sep{color:#222;}
+.content-area{flex:1;overflow-y:auto;padding:14px;}
+
+/* ── LAYER SCREENS ───────────────────────────────── */
+.layer{display:none;}
+.layer.on{display:block;}
+
+/* ── LAYER 1: CURRICULUM OVERVIEW ────────────────── */
+.l1-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:14px;}
+.cur-card{background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:13px 14px;cursor:pointer;transition:border-color 0.15s;}
+.cur-card:hover{border-color:#444;}
+.cur-card.sel{border-color:#c8a800;background:#151000;}
+.cur-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.cur-title{font-family:'Orbitron',monospace;font-size:12px;color:#aaa;letter-spacing:1px;}
+.cur-dur{font-size:9px;padding:2px 6px;border-radius:2px;letter-spacing:1px;flex-shrink:0;}
+.dur-fy{background:#1a1500;color:#c8a800;border:1px solid #2a2200;}
+.dur-sem{background:#002a33;color:#00ccff;border:1px solid #003a4a;}
+.dur-qtr{background:#0a1f0a;color:#4db84d;border:1px solid #1a3a1a;}
+.cur-sub{font-size:10px;color:#333;letter-spacing:0.5px;margin-bottom:9px;}
+.prog-bg{height:3px;background:#1a1a1a;border-radius:2px;margin-bottom:5px;}
+.prog-bar{height:3px;border-radius:2px;}
+.cur-meta{display:flex;justify-content:space-between;font-size:9px;color:#333;letter-spacing:1px;margin-bottom:7px;}
+.cur-periods{display:flex;gap:3px;flex-wrap:wrap;}
+.per-tag{font-size:9px;padding:2px 5px;border-radius:2px;letter-spacing:1px;}
+.pt-a{background:#002a33;color:#00ccff;border:1px solid #003a4a;}
+.pt-b{background:#1a1500;color:#c8a800;border:1px solid #2a2200;}
+.cur-actions{display:flex;gap:5px;margin-top:9px;padding-top:8px;border-top:1px solid #1a1a1a;}
+.ca-btn{font-size:9px;padding:2px 7px;border-radius:2px;cursor:pointer;letter-spacing:1px;font-family:'Share Tech Mono',monospace;border:1px solid #2a2a2a;background:#1a1a1a;color:#555;}
+.ca-btn:hover{border-color:#c8a800;color:#c8a800;background:#1a1500;}
+.ca-btn.go{border-color:#00ccff;background:#002a33;color:#00ccff;}
+.ca-btn.go:hover{background:#003a4a;}
+
+/* ── LAYER 2: UNITS ──────────────────────────────── */
+.l2-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.l2-title{font-family:'Orbitron',monospace;font-size:13px;color:#c8a800;letter-spacing:2px;}
+.unit-list{display:flex;flex-direction:column;gap:5px;}
+.unit-row{background:#111;border:1px solid #1e1e1e;border-radius:3px;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:border-color 0.12s;}
+.unit-row:hover{border-color:#333;}
+.unit-row.sel{border-color:#c8a800;background:#151000;}
+.unit-num{font-size:10px;color:#333;width:24px;flex-shrink:0;letter-spacing:1px;}
+.unit-info{flex:1;min-width:0;}
+.unit-name{font-size:12px;color:#888;letter-spacing:0.5px;}
+.unit-meta{font-size:9px;color:#333;letter-spacing:1px;margin-top:2px;}
+.unit-status{font-size:9px;padding:2px 7px;border-radius:2px;letter-spacing:1px;flex-shrink:0;white-space:nowrap;}
+.st-done{background:#0a1f0a;color:#4db84d;border:1px solid #1a3a1a;}
+.st-active{background:#1a1500;color:#c8a800;border:1px solid #2a2200;}
+.st-upcoming{background:#111;color:#2a2a2a;border:1px solid #1e1e1e;}
+.unit-prog{font-size:9px;color:#336;letter-spacing:1px;width:40px;text-align:right;flex-shrink:0;}
+.l2-actions{display:flex;gap:6px;margin-top:12px;}
+
+/* ── LAYER 3: LESSON EDITOR ──────────────────────── */
+.l3-wrap{display:grid;grid-template-columns:195px 1fr;gap:10px;height:100%;min-height:0;}
+.lesson-list-col{display:flex;flex-direction:column;gap:0;overflow:hidden;}
+.ll-scroll{flex:1;overflow-y:auto;}
+.ll-unit-hdr{font-size:9px;letter-spacing:2px;color:#333;padding:6px 9px 4px;background:#0f0f0f;position:sticky;top:0;z-index:1;}
+.ll-item{padding:7px 9px;border-bottom:1px solid #111;cursor:pointer;font-size:11px;color:#555;transition:background 0.1s;}
+.ll-item:hover{background:#151515;color:#888;}
+.ll-item.active{background:#1a1500;color:#c8a800;border-left:2px solid #c8a800;}
+.ll-item.done{color:#2a2a2a;}
+.ll-item.done.active{background:#1a1500;color:#c8a800;}
+.ll-date{font-size:9px;color:#2a2a2a;margin-top:1px;letter-spacing:1px;}
+.ll-add{font-size:10px;color:#2a2a2a;padding:6px 9px;cursor:pointer;letter-spacing:1px;border-top:1px solid #1a1a1a;text-align:center;}
+.ll-add:hover{color:#555;}
+
+.editor-panel{background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:13px;display:flex;flex-direction:column;gap:11px;overflow-y:auto;min-height:0;}
+.ep-toprow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
+.ep-title{font-family:'Orbitron',monospace;font-size:11px;color:#aaa;letter-spacing:1px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ep-btns{display:flex;gap:5px;flex-shrink:0;}
+.ep-btn{padding:3px 9px;border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
+.ep-save{border:1px solid #2d8c2d;background:#0a1f0a;color:#4db84d;}
+.ep-save:hover{background:#142a14;}
+.ep-del{border:1px solid #441111;background:#1a0a0a;color:#663333;}
+.ep-del:hover{border-color:#c03030;color:#c03030;}
+
+.field-lbl{font-size:9px;letter-spacing:2px;color:#333;margin-bottom:3px;}
+.field-inp{width:100%;background:#151515;border:1px solid #1e1e1e;border-radius:2px;padding:5px 8px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none;}
+.field-inp:focus{border-color:#444;}
+.field-ta{width:100%;background:#151515;border:1px solid #1e1e1e;border-radius:2px;padding:6px 8px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;resize:none;outline:none;}
+.field-ta:focus{border-color:#444;}
+.list-row{display:flex;gap:5px;margin-bottom:4px;align-items:center;}
+.list-inp{flex:1;background:#151515;border:1px solid #1e1e1e;border-radius:2px;padding:4px 7px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none;}
+.list-inp:focus{border-color:#444;}
+.list-url{width:45%;background:#151515;border:1px solid #1e1e1e;border-radius:2px;padding:4px 7px;color:#555;font-family:'Share Tech Mono',monospace;font-size:10px;outline:none;}
+.list-url:focus{border-color:#444;}
+.list-del{color:#2a2a2a;cursor:pointer;font-size:12px;padding:0 3px;flex-shrink:0;}
+.list-del:hover{color:#c03030;}
+.add-btn{font-size:10px;color:#2a2a2a;cursor:pointer;letter-spacing:1px;border:1px dashed #1e1e1e;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;}
+.add-btn:hover{color:#555;border-color:#333;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-grp{display:flex;flex-direction:column;gap:4px;}
+
+/* ── PUSH BANNER ─────────────────────────────────── */
+.push-banner{background:#0a1f0a;border:1px solid #1a3a1a;border-radius:3px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
+.push-lbl{font-size:10px;color:#4db84d;letter-spacing:1px;white-space:nowrap;}
+.push-periods{display:flex;gap:4px;flex-wrap:wrap;}
+.push-per{font-size:9px;padding:2px 7px;border:1px solid #1a3a1a;border-radius:2px;background:#111;color:#2a5c00;letter-spacing:1px;cursor:pointer;font-family:'Share Tech Mono',monospace;}
+.push-per.sel{background:#002a33;border-color:#00ccff;color:#00ccff;}
+.push-go{padding:4px 12px;border:1px solid #2d8c2d;border-radius:3px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
+.push-go:hover{background:#142a14;}
+.push-go:disabled{opacity:0.4;cursor:not-allowed;}
+.push-status{font-size:9px;color:#4db84d;letter-spacing:1px;}
+
+/* ── LAYER 4: ROSTERS ────────────────────────────── */
+.roster-layout{display:grid;grid-template-columns:200px 1fr;gap:10px;}
+.roster-cls-list{display:flex;flex-direction:column;gap:4px;}
+.rcls-item{padding:7px 10px;border:1px solid #1e1e1e;border-radius:3px;cursor:pointer;font-size:11px;color:#555;background:#111;letter-spacing:0.5px;}
+.rcls-item:hover{border-color:#333;color:#888;}
+.rcls-item.active{border-color:#00ccff;background:#002a33;color:#00ccff;}
+.rcls-day{font-size:9px;color:#336;margin-top:1px;letter-spacing:1px;}
+.roster-panel{background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:12px;}
+.rp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.rp-title{font-family:'Orbitron',monospace;font-size:12px;color:#00ccff;letter-spacing:1px;}
+.rp-meta{font-size:9px;color:#336;letter-spacing:1px;}
+.rp-actions{display:flex;gap:5px;align-items:center;}
+.rp-btn{font-size:10px;padding:3px 9px;border-radius:2px;cursor:pointer;letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
+.rp-import{border:1px solid #336;background:#001a2a;color:#336;}
+.rp-import:hover{border-color:#00ccff;color:#00ccff;}
+.rp-save{border:1px solid #2d8c2d;background:#0a1f0a;color:#4db84d;}
+.rp-save:hover{background:#142a14;}
+.student-list{display:flex;flex-direction:column;gap:0;max-height:380px;overflow-y:auto;}
+.stu-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#666;}
+.stu-row:last-child{border-bottom:none;}
+.stu-num{font-size:9px;color:#2a2a2a;width:20px;flex-shrink:0;text-align:right;}
+.stu-name{flex:1;}
+.stu-acc{font-size:9px;letter-spacing:1px;padding:1px 5px;border-radius:2px;}
+.acc-iep{background:#1a0a2a;color:#aa55cc;border:1px solid #2a1a3a;}
+.acc-504{background:#1a1500;color:#c8a800;border:1px solid #2a2200;}
+.acc-ell{background:#002a33;color:#00ccff;border:1px solid #003a4a;}
+.acc-none{color:#2a2a2a;font-size:9px;}
+.stu-edit{font-size:9px;color:#2a2a2a;cursor:pointer;padding:1px 5px;border:1px solid #222;border-radius:2px;font-family:'Share Tech Mono',monospace;background:none;letter-spacing:1px;}
+.stu-edit:hover{color:#c8a800;border-color:#443300;}
+.stu-del{font-size:11px;color:#2a2a2a;cursor:pointer;padding:0 3px;}
+.stu-del:hover{color:#c03030;}
+.paste-area{margin-top:10px;border-top:1px solid #1a1a1a;padding-top:10px;}
+.paste-lbl{font-size:9px;letter-spacing:2px;color:#333;margin-bottom:4px;}
+.paste-ta{width:100%;background:#151515;border:1px solid #1e1e1e;border-radius:2px;padding:6px 8px;color:#888;font-family:'Share Tech Mono',monospace;font-size:11px;resize:none;outline:none;height:60px;}
+.paste-row{display:flex;gap:6px;margin-top:5px;align-items:center;}
+.manual-inp{flex:1;background:#151515;border:1px solid #1e1e1e;border-radius:2px;padding:4px 7px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none;}
+
+/* ── ACC MODAL ───────────────────────────────────── */
+.modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:500;align-items:center;justify-content:center;}
+.modal-bg.on{display:flex;}
+.modal{background:#161616;border:1px solid #444;border-radius:6px;width:340px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-hdr{padding:10px 14px;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:11px;color:#c8a800;letter-spacing:1px;}
+.modal-close{font-size:13px;color:#444;cursor:pointer;padding:0 3px;}
+.modal-close:hover{color:#888;}
+.modal-body{padding:12px;overflow-y:auto;flex:1;}
+.modal-foot{padding:8px 12px;border-top:1px solid #1a1a1a;display:flex;gap:6px;justify-content:flex-end;flex-shrink:0;}
+.m-btn{font-size:10px;padding:4px 12px;border-radius:2px;cursor:pointer;letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
+.m-save{border:1px solid #2d8c2d;background:#0a1f0a;color:#4db84d;}
+.m-save:hover{background:#142a14;}
+.m-cancel{border:1px solid #333;background:none;color:#555;}
+.m-cancel:hover{color:#888;}
+.m-tog{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid #2a2a2a;border-radius:3px;cursor:pointer;margin-bottom:9px;background:#151515;}
+.m-tog.on{border-color:#c8a800;background:#1a1500;}
+.m-chk{width:12px;height:12px;border-radius:2px;border:1px solid #333;background:#111;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#444;}
+.m-tog.on .m-chk{background:#2a2000;border-color:#c8a800;color:#c8a800;}
+.m-tog-lbl{font-size:10px;color:#555;letter-spacing:0.5px;}
+.m-tog.on .m-tog-lbl{color:#c8a800;}
+.m-details{display:none;}
+.m-details.on{display:block;}
+
+/* ── STATUS BAR ──────────────────────────────────── */
+.statusbar{background:#080808;border-top:1px solid #1a1a1a;padding:3px 16px;font-size:9px;color:#2a2a2a;letter-spacing:1px;flex-shrink:0;height:22px;display:flex;align-items:center;justify-content:space-between;}
+.status-msg{color:#336;}
+.status-msg.ok{color:#2d5c00;}
+.status-msg.err{color:#5c1a1a;}
+
+/* ── SHARED UTILITY ──────────────────────────────── */
+.btn{font-size:10px;padding:3px 10px;border-radius:2px;cursor:pointer;letter-spacing:1px;font-family:'Share Tech Mono',monospace;border:1px solid #2a2a2a;background:#151515;color:#555;}
+.btn:hover{color:#888;border-color:#444;}
+.btn-amber{border-color:#443300;background:#1a1500;color:#c8a800;}
+.btn-amber:hover{background:#251a00;}
+.btn-cyan{border-color:#003a4a;background:#002a33;color:#00ccff;}
+.btn-cyan:hover{background:#003040;}
+.btn-green{border-color:#1a3a1a;background:#0a1f0a;color:#4db84d;}
+.btn-green:hover{background:#142a14;}
+.empty-state{color:#2a2a2a;font-size:11px;letter-spacing:2px;text-align:center;padding:30px 0;}
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ───────────────────────────────────── -->
+<div class="topbar">
+  <div>
+    <div class="mc-name">MISSION CONTROL</div>
+    <div class="mc-sub">WEST MICHIGAN AVIATION ACADEMY</div>
+  </div>
+  <div class="topbar-right">
+    <div class="wx-block">
+      <div class="wx-temp" id="wx-temp">-°F</div>
+      <div class="wx-details">
+        <div class="wx-row">WIND <span class="wx-val" id="wx-wind">- kt</span></div>
+        <div class="wx-row">GUST <span class="wx-val" id="wx-gust">-</span> · KGRR</div>
+      </div>
+    </div>
+    <div class="vdiv"></div>
+    <div>
+      <div class="dt-time" id="clock">-:--</div>
+      <div class="dt-date" id="dateline">------</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NAV ───────────────────────────────────────── -->
+<div class="nav">
+  <a class="nb" href="index.html">MISSION CONTROL</a>
+  <a class="nb" href="class-comm.html">CLASS COMM</a>
+  <a class="nb active">PLANNING</a>
+  <a class="nb" href="schedule.html">SCHEDULE</a>
+  <a class="nb" href="flight-data.html">FLIGHT DATA</a>
+  <a class="nb" href="rc-club.html">RC CLUB</a>
+</div>
+
+<!-- ── BODY ──────────────────────────────────────── -->
+<div class="body">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="lsidebar">
+    <div class="ls-hdr">PLANNING</div>
+
+    <div class="ls-section">
+      <div class="ls-label">CURRICULUM</div>
+      <div class="ls-item active" id="lsi-cur_uas" onclick="selectCurriculum('cur_uas')">
+        <span class="ls-dot" style="background:#c8a800;"></span>UAS
+      </div>
+      <div class="ls-item" id="lsi-cur_rc" onclick="selectCurriculum('cur_rc')">
+        <span class="ls-dot" style="background:#4db84d;"></span>Intro to RC
+      </div>
+      <div class="ls-item" id="lsi-cur_avn" onclick="selectCurriculum('cur_avn')">
+        <span class="ls-dot" style="background:#00ccff;"></span>Intro to Aviation
+      </div>
+      <div class="ls-item" id="lsi-cur_innov" onclick="selectCurriculum('cur_innov')">
+        <span class="ls-dot" style="background:#d4720a;"></span>UAS Innovations
+      </div>
+      <div class="ls-add" onclick="newCurriculum()">+ new curriculum</div>
+    </div>
+
+    <div class="ls-section">
+      <div class="ls-label">CLASSES & ROSTERS</div>
+      <div class="ls-item" id="lsi-cls_p1_a" onclick="selectRoster('cls_p1_a')">
+        <span class="ls-dot" style="background:#336;"></span>P1 · UAS
+      </div>
+      <div class="ls-item" id="lsi-cls_p2_a" onclick="selectRoster('cls_p2_a')">
+        <span class="ls-dot" style="background:#336;"></span>P2 · Intro RC
+      </div>
+      <div class="ls-item" id="lsi-cls_p3_a" onclick="selectRoster('cls_p3_a')">
+        <span class="ls-dot" style="background:#336;"></span>P3 · UAS Innov.
+      </div>
+      <div class="ls-item" id="lsi-cls_p5_s1" onclick="selectRoster('cls_p5_s1')">
+        <span class="ls-dot" style="background:#336;"></span>P5 · Aviation S1
+      </div>
+      <div class="ls-item" id="lsi-cls_p5_s2" onclick="selectRoster('cls_p5_s2')">
+        <span class="ls-dot" style="background:#336;"></span>P5 · Aviation S2
+      </div>
+      <div class="ls-item" id="lsi-cls_p7_b" onclick="selectRoster('cls_p7_b')">
+        <span class="ls-dot" style="background:#336;"></span>P7 · UAS
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <div class="breadcrumb" id="breadcrumb">
+      <span class="bc active">CURRICULUM OVERVIEW</span>
+    </div>
+
+    <div class="content-area" id="content-area">
+
+      <!-- ══ LAYER 1: CURRICULUM OVERVIEW ════════════ -->
+      <div class="layer on" id="layer-1">
+        <div class="l1-grid" id="cur-grid"></div>
+      </div>
+
+      <!-- ══ LAYER 2: UNITS ══════════════════════════ -->
+      <div class="layer" id="layer-2">
+        <div class="l2-hdr">
+          <div class="l2-title" id="l2-title">UNITS</div>
+          <button class="btn btn-amber" onclick="newUnit()">+ NEW UNIT</button>
+        </div>
+        <div class="unit-list" id="unit-list"></div>
+      </div>
+
+      <!-- ══ LAYER 3: LESSON EDITOR ══════════════════ -->
+      <div class="layer" id="layer-3" style="height:100%;min-height:500px;">
+        <div class="l3-wrap">
+          <div class="lesson-list-col">
+            <div class="ll-scroll" id="ll-scroll"></div>
+          </div>
+          <div class="editor-panel" id="editor-panel">
+            <div class="empty-state">SELECT A LESSON</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ LAYER 4: ROSTERS ════════════════════════ -->
+      <div class="layer" id="layer-4">
+        <div class="roster-layout">
+          <div class="roster-cls-list" id="roster-cls-list"></div>
+          <div class="roster-panel" id="roster-panel">
+            <div class="empty-state">SELECT A CLASS</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main -->
+</div><!-- /body -->
+
+<!-- ── ACCOMMODATION MODAL ────────────────────────── -->
+<div class="modal-bg" id="acc-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="acc-modal-title">STUDENT</div>
+      <span class="modal-close" onclick="closeAccModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="m-tog" id="acc-tog" onclick="toggleAccReqs()">
+        <div class="m-chk" id="acc-chk"></div>
+        <div class="m-tog-lbl" id="acc-lbl">This student has special requirements</div>
+      </div>
+      <div class="m-details" id="acc-details">
+        <div class="field-lbl">CHECKLIST ITEMS</div>
+        <div style="font-size:9px;color:#2a2a2a;margin-bottom:5px;letter-spacing:1px;">These appear as checkboxes in Class Comm</div>
+        <div id="acc-items-list"></div>
+        <div style="display:flex;gap:5px;margin-top:4px;">
+          <input class="list-inp" id="acc-new-item" placeholder="add requirement..." onkeydown="if(event.key==='Enter')addAccItem()">
+          <button class="btn" onclick="addAccItem()">+ ADD</button>
+        </div>
+        <div class="field-lbl" style="margin-top:10px;">PRIVATE NOTES</div>
+        <textarea class="field-ta" id="acc-notes" style="height:55px;" placeholder="Private — not shown in Class Comm..."></textarea>
+        <div style="font-size:9px;color:#2a2a2a;margin-top:2px;letter-spacing:1px;">⚿ Visible in Planning only</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="m-btn m-save" onclick="saveAccModal()">✓ SAVE</button>
+      <button class="m-btn m-cancel" onclick="closeAccModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STATUS BAR ─────────────────────────────────── -->
+<div class="statusbar">
+  <span id="status-msg" class="status-msg">READY</span>
+  <span id="status-right" style="color:#222;">PLANNING v2.0</span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7IKheLtXlVgJznD33z92DHp6iC5ql0KSY8ALwfS_gjaUO2EHdsEIv_QIAf1nbpE88VA/exec';
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+var state = {
+  curricula: [],
+  units: {},       // keyed by curriculum_id
+  lessons: {},     // keyed by unit_id
+  classes: [],
+  rosters: {},     // keyed by class_id
+
+  curLayer: 1,
+  selCurId: null,
+  selUnitId: null,
+  selLessonId: null,
+  selClassId: null,
+
+  // Acc modal
+  accClassId: null,
+  accStudentIdx: null,
+  accReqs: false,
+  accItems: [],
+
+  dirty: false,
+};
+
+// ══════════════════════════════════════════════════
+// SHEETS API
+// ══════════════════════════════════════════════════
+function showStatus(msg, type) {
+  var el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg' + (type ? ' ' + type : '');
+}
+
+function sheetsGet(params) {
+  var url = SCRIPT_URL + '?' + Object.keys(params).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  return fetch(url).then(function(r) { return r.json(); }).catch(function(e) {
+    showStatus('Network error: ' + e, 'err');
+    throw e;
+  });
+}
+
+function sheetsPost(data) {
+  return fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); }).catch(function(e) {
+    showStatus('Save failed: ' + e, 'err');
+    throw e;
+  });
+}
+
+// ══════════════════════════════════════════════════
+// CLOCK & WEATHER
+// ══════════════════════════════════════════════════
+function pad(n) { return n < 10 ? '0' + n : n; }
+function tick() {
+  var now = new Date(), h = now.getHours(), m = now.getMinutes();
+  var ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+  document.getElementById('clock').textContent = h12 + ':' + pad(m) + ' ' + ap;
+  var days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('dateline').textContent = days[now.getDay()] + ' ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+}
+tick(); setInterval(tick, 1000);
+
+async function loadWx() {
+  try {
+    var r = await fetch('https://api.weather.gov/stations/KGRR/observations/latest');
+    if (!r.ok) throw 0;
+    var d = await r.json(), p = d.properties;
+    var c = p.temperature && p.temperature.value;
+    document.getElementById('wx-temp').textContent = c != null ? Math.round(c * 9/5 + 32) + '°F' : '-°F';
+    var ws = p.windSpeed && p.windSpeed.value;
+    document.getElementById('wx-wind').textContent = ws != null ? Math.round(ws * 0.539957) + ' kt' : '- kt';
+    var wg = p.windGust && p.windGust.value;
+    document.getElementById('wx-gust').textContent = wg != null ? Math.round(wg * 0.539957) + ' kt' : 'none';
+  } catch(e) {
+    document.getElementById('wx-wind').textContent = 'unavailable';
+  }
+}
+loadWx();
+
+// ══════════════════════════════════════════════════
+// CURRICULUM DATA
+// ══════════════════════════════════════════════════
+var CURRICULA_META = {
+  cur_uas:   { color: '#c8a800', dur: 'full_year',  durLabel: 'FULL YEAR',  classes: [{id:'cls_p1_a',label:'P1',day:'A'},{id:'cls_p7_b',label:'P7',day:'B'}] },
+  cur_rc:    { color: '#4db84d', dur: 'quarter',    durLabel: 'QUARTER',    classes: [{id:'cls_p2_a',label:'P2',day:'A'}] },
+  cur_avn:   { color: '#00ccff', dur: 'semester',   durLabel: 'SEMESTER x2', classes: [{id:'cls_p5_s1',label:'P5 S1',day:'B'},{id:'cls_p5_s2',label:'P5 S2',day:'B'}] },
+  cur_innov: { color: '#d4720a', dur: 'full_year',  durLabel: 'FULL YEAR',  classes: [{id:'cls_p3_a',label:'P3',day:'A'}] },
+};
+
+var CLASSES_META = {
+  cls_p1_a:  { label:'P1 · UAS',         day:'A', curId:'cur_uas',   semester:'Full Year',  start:'2025-08-18', end:'2026-05-27' },
+  cls_p2_a:  { label:'P2 · Intro RC',    day:'A', curId:'cur_rc',    semester:'Q3 + Q4',    start:'2026-01-05', end:'2026-05-27' },
+  cls_p3_a:  { label:'P3 · UAS Innov.',  day:'A', curId:'cur_innov', semester:'Full Year',  start:'2025-08-18', end:'2026-05-27' },
+  cls_p5_s1: { label:'P5 · Aviation S1', day:'B', curId:'cur_avn',   semester:'Semester 1', start:'2025-08-18', end:'2025-12-11' },
+  cls_p5_s2: { label:'P5 · Aviation S2', day:'B', curId:'cur_avn',   semester:'Semester 2', start:'2026-01-05', end:'2026-05-27' },
+  cls_p7_b:  { label:'P7 · UAS',         day:'B', curId:'cur_uas',   semester:'Full Year',  start:'2025-08-18', end:'2026-05-27' },
+};
+
+// ══════════════════════════════════════════════════
+// LAYER NAVIGATION
+// ══════════════════════════════════════════════════
+function showLayer(n) {
+  document.querySelectorAll('.layer').forEach(function(l) { l.classList.remove('on'); });
+  document.getElementById('layer-' + n).classList.add('on');
+  state.curLayer = n;
+}
+
+function setBreadcrumb(items) {
+  var bc = document.getElementById('breadcrumb');
+  bc.innerHTML = items.map(function(item, i) {
+    var isLast = i === items.length - 1;
+    var html = '<span class="bc' + (isLast ? ' active' : '') + '"';
+    if (item.onclick) html += ' onclick="' + item.onclick + '" style="cursor:pointer;"';
+    html += '>' + item.label + '</span>';
+    return html;
+  }).join('<span class="bc-sep"> › </span>');
+}
+
+// ══════════════════════════════════════════════════
+// LAYER 1 — CURRICULUM OVERVIEW
+// ══════════════════════════════════════════════════
+function selectCurriculum(curId) {
+  state.selCurId = curId;
+  // Update sidebar highlights
+  document.querySelectorAll('.ls-item').forEach(function(el) {
+    el.classList.remove('active', 'roster-active');
+  });
+  var lsi = document.getElementById('lsi-' + curId);
+  if (lsi) lsi.classList.add('active');
+  showLayer(1);
+  renderL1();
+  setBreadcrumb([{label:'CURRICULUM OVERVIEW'}]);
+}
+
+function renderL1() {
+  var grid = document.getElementById('cur-grid');
+  var curs = [
+    { id:'cur_uas',   name:'UAS',            sub:'Unmanned Aerial Systems', prog:62, unit:'4 OF 8' },
+    { id:'cur_rc',    name:'INTRO TO RC',     sub:'Intro to RC Flight',      prog:0,  unit:'NOT STARTED' },
+    { id:'cur_avn',   name:'INTRO TO AVIATION', sub:'Introduction to Aviation', prog:45, unit:'3 OF 6' },
+    { id:'cur_innov', name:'UAS INNOVATIONS', sub:'UAS Innovations',         prog:55, unit:'3 OF 6' },
+  ];
+  grid.innerHTML = '';
+  curs.forEach(function(c) {
+    var meta = CURRICULA_META[c.id];
+    var durClass = meta.dur === 'full_year' ? 'dur-fy' : (meta.dur === 'semester' ? 'dur-sem' : 'dur-qtr');
+    var periods = meta.classes.map(function(cls) {
+      var dayClass = cls.day === 'A' ? 'pt-a' : 'pt-b';
+      return '<span class="per-tag ' + dayClass + '">' + cls.label + ' · ' + cls.day + '</span>';
+    }).join('');
+    var card = document.createElement('div');
+    card.className = 'cur-card' + (state.selCurId === c.id ? ' sel' : '');
+    card.innerHTML = '<div class="cur-hdr"><div class="cur-title">' + c.name + '</div><span class="cur-dur ' + durClass + '">' + meta.durLabel + '</span></div>' +
+      '<div class="cur-sub">' + c.sub + '</div>' +
+      '<div class="prog-bg"><div class="prog-bar" style="width:' + c.prog + '%;background:' + meta.color + ';"></div></div>' +
+      '<div class="cur-meta"><span>' + c.unit + '</span><span>' + c.prog + '% COMPLETE</span></div>' +
+      '<div class="cur-periods">' + periods + '</div>' +
+      '<div class="cur-actions">' +
+        '<button class="ca-btn go" onclick="goToUnits(\'' + c.id + '\')">▶ UNITS</button>' +
+        '<button class="ca-btn" onclick="editCurriculum(\'' + c.id + '\')">EDIT</button>' +
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+function goToUnits(curId) {
+  state.selCurId = curId;
+  renderL2();
+  showLayer(2);
+  var meta = CURRICULA_META[curId];
+  var names = { cur_uas:'UAS', cur_rc:'INTRO TO RC', cur_avn:'INTRO TO AVIATION', cur_innov:'UAS INNOVATIONS' };
+  setBreadcrumb([
+    { label:'CURRICULUM', onclick:"showLayer(1);setBreadcrumb([{label:'CURRICULUM OVERVIEW'}]);" },
+    { label: names[curId] || curId }
+  ]);
+}
+
+function editCurriculum(curId) {
+  showStatus('Curriculum editor — coming in next build', '');
+}
+
+function newCurriculum() {
+  showStatus('New curriculum — coming in next build', '');
+}
+
+// ══════════════════════════════════════════════════
+// LAYER 2 — UNITS
+// ══════════════════════════════════════════════════
+var SAMPLE_UNITS = {
+  cur_uas: [
+    { id:'u_uas_01', name:'Introduction & Safety',      order:1, target_days:8,  done:8,  total:8,  status:'done' },
+    { id:'u_uas_02', name:'Regulations & Airspace',     order:2, target_days:10, done:10, total:10, status:'done' },
+    { id:'u_uas_03', name:'Flight Principles',          order:3, target_days:10, done:10, total:10, status:'done' },
+    { id:'u_uas_04', name:'UAS Operations',             order:4, target_days:12, done:6,  total:12, status:'active' },
+    { id:'u_uas_05', name:'Maintenance & Repair',       order:5, target_days:8,  done:0,  total:8,  status:'upcoming' },
+    { id:'u_uas_06', name:'Mission Planning',           order:6, target_days:8,  done:0,  total:8,  status:'upcoming' },
+    { id:'u_uas_07', name:'Data Collection & Analysis', order:7, target_days:6,  done:0,  total:6,  status:'upcoming' },
+    { id:'u_uas_08', name:'Capstone Project',           order:8, target_days:6,  done:0,  total:6,  status:'upcoming' },
+  ],
+  cur_rc: [
+    { id:'u_rc_01', name:'RC Fundamentals',     order:1, target_days:8, done:0, total:8, status:'upcoming' },
+    { id:'u_rc_02', name:'Aircraft Systems',    order:2, target_days:8, done:0, total:8, status:'upcoming' },
+    { id:'u_rc_03', name:'Flight Skills',       order:3, target_days:10, done:0, total:10, status:'upcoming' },
+    { id:'u_rc_04', name:'Competition Prep',    order:4, target_days:8, done:0, total:8, status:'upcoming' },
+    { id:'u_rc_05', name:'Final Project',       order:5, target_days:6, done:0, total:6, status:'upcoming' },
+  ],
+  cur_avn: [
+    { id:'u_avn_01', name:'History of Aviation',    order:1, target_days:8, done:8, total:8, status:'done' },
+    { id:'u_avn_02', name:'Aerodynamics',           order:2, target_days:10, done:5, total:10, status:'active' },
+    { id:'u_avn_03', name:'Aircraft Systems',       order:3, target_days:8, done:0, total:8, status:'upcoming' },
+    { id:'u_avn_04', name:'Navigation',             order:4, target_days:8, done:0, total:8, status:'upcoming' },
+    { id:'u_avn_05', name:'Weather',                order:5, target_days:6, done:0, total:6, status:'upcoming' },
+    { id:'u_avn_06', name:'Career Pathways',        order:6, target_days:6, done:0, total:6, status:'upcoming' },
+  ],
+  cur_innov: [
+    { id:'u_innov_01', name:'Advanced UAS Systems',   order:1, target_days:8, done:8, total:8, status:'done' },
+    { id:'u_innov_02', name:'Sensor Integration',     order:2, target_days:8, done:8, total:8, status:'done' },
+    { id:'u_innov_03', name:'Autonomous Operations',  order:3, target_days:10, done:4, total:10, status:'active' },
+    { id:'u_innov_04', name:'Data Analytics',         order:4, target_days:8, done:0, total:8, status:'upcoming' },
+    { id:'u_innov_05', name:'Industry Applications',  order:5, target_days:8, done:0, total:8, status:'upcoming' },
+    { id:'u_innov_06', name:'Capstone Project',       order:6, target_days:8, done:0, total:8, status:'upcoming' },
+  ],
+};
+
+function renderL2() {
+  var curId = state.selCurId;
+  var names = { cur_uas:'UAS', cur_rc:'INTRO TO RC', cur_avn:'INTRO TO AVIATION', cur_innov:'UAS INNOVATIONS' };
+  document.getElementById('l2-title').textContent = (names[curId] || curId) + ' — UNITS';
+  var units = SAMPLE_UNITS[curId] || [];
+  var list = document.getElementById('unit-list');
+  list.innerHTML = '';
+  if (!units.length) {
+    list.innerHTML = '<div class="empty-state">NO UNITS YET — ADD ONE ABOVE</div>';
+    return;
+  }
+  units.forEach(function(u) {
+    var stClass = u.status === 'done' ? 'st-done' : (u.status === 'active' ? 'st-active' : 'st-upcoming');
+    var stLabel = u.status === 'done' ? 'COMPLETE' : (u.status === 'active' ? 'IN PROGRESS' : 'UPCOMING');
+    var days = u.target_days ? u.target_days + ' DAYS' : '';
+    var row = document.createElement('div');
+    row.className = 'unit-row' + (state.selUnitId === u.id ? ' sel' : '');
+    row.innerHTML =
+      '<div class="unit-num">U' + u.order + '</div>' +
+      '<div class="unit-info"><div class="unit-name">' + u.name + '</div><div class="unit-meta">' + (days ? days + ' · ' : '') + (u.status === 'active' ? 'CURRENT' : u.status.toUpperCase()) + '</div></div>' +
+      '<div class="unit-status ' + stClass + '">' + stLabel + '</div>' +
+      '<div class="unit-prog">' + u.done + '/' + u.total + '</div>';
+    (function(uid, uname) {
+      row.onclick = function() { goToLessons(uid, uname); };
+    })(u.id, u.name);
+    list.appendChild(row);
+  });
+}
+
+function newUnit() {
+  showStatus('New unit — wire to Sheets in full build', '');
+}
+
+// ══════════════════════════════════════════════════
+// LAYER 3 — LESSON EDITOR
+// ══════════════════════════════════════════════════
+var SAMPLE_LESSONS = {
+  u_uas_04: [
+    { id:'l_uas_04_01', title:'Day 1 — Overview',          order:1, status:'done', date:'APR 7',  qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_02', title:'Day 2 — Pre-flight',        order:2, status:'done', date:'APR 9',  qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_03', title:'Day 3 — Launch Procedures', order:3, status:'done', date:'APR 11', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_04', title:'Day 4 — Flight Ops',        order:4, status:'done', date:'APR 14', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_05', title:'Day 5 — Emergency Proc.',   order:5, status:'done', date:'APR 16', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_06', title:'Day 6 — Post-flight',       order:6, status:'done', date:'APR 18', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_07', title:'Day 7 — Airspace Auth.',    order:7, status:'active', date:'APR 24',
+      qotd:'What is the difference between LAANC and a full Part 107 waiver?',
+      agenda:['Review LAANC authorization process','Demo: AirMap / Aloft app','Student practice: file a simulated auth','Q&A and debrief'],
+      presentations:[{l:'LAANC Overview Slides', url:''}],
+      videos:[{l:'How to use AirMap', url:''}],
+      reminders:['Have students open Aloft on their phones'] },
+    { id:'l_uas_04_08', title:'Day 8 — Field Ops',         order:8, status:'upcoming', date:'APR 28', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_09', title:'Day 9 — Night Ops',         order:9, status:'upcoming', date:'APR 30', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_10', title:'Day 10 — Review',           order:10, status:'upcoming', date:'MAY 2', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_11', title:'Day 11 — Assessment',       order:11, status:'upcoming', date:'MAY 5', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+    { id:'l_uas_04_12', title:'Day 12 — Wrap-up',          order:12, status:'upcoming', date:'MAY 7', qotd:'', agenda:[], presentations:[], videos:[], reminders:[] },
+  ],
+};
+
+var activeLessonData = null; // working copy of current lesson
+
+function goToLessons(unitId, unitName) {
+  state.selUnitId = unitId;
+  var names = { cur_uas:'UAS', cur_rc:'INTRO TO RC', cur_avn:'INTRO TO AVIATION', cur_innov:'UAS INNOVATIONS' };
+  var curName = names[state.selCurId] || state.selCurId;
+  showLayer(3);
+  setBreadcrumb([
+    { label:'CURRICULUM', onclick:"showLayer(1);setBreadcrumb([{label:'CURRICULUM OVERVIEW'}]);" },
+    { label:curName, onclick:"goToUnits('" + state.selCurId + "');" },
+    { label: unitName.toUpperCase() }
+  ]);
+  renderLessonList(unitId);
+  // Auto-select today's / active lesson
+  var lessons = SAMPLE_LESSONS[unitId] || [];
+  var active = lessons.find(function(l) { return l.status === 'active'; });
+  if (active) loadLesson(active.id);
+  else renderEditorEmpty();
+}
+
+function renderLessonList(unitId) {
+  var scroll = document.getElementById('ll-scroll');
+  scroll.innerHTML = '';
+  var lessons = SAMPLE_LESSONS[unitId] || [];
+  var hdr = document.createElement('div');
+  hdr.className = 'll-unit-hdr';
+  hdr.textContent = (unitId || '').toUpperCase().replace(/_/g,' ');
+  scroll.appendChild(hdr);
+  lessons.forEach(function(l) {
+    var item = document.createElement('div');
+    item.className = 'll-item' + (l.status === 'done' ? ' done' : '') + (state.selLessonId === l.id ? ' active' : '');
+    item.id = 'lli-' + l.id;
+    item.innerHTML = '<div>' + l.title + '</div><div class="ll-date">' + (l.status === 'done' ? 'DONE · ' : (l.status === 'active' ? 'TODAY · ' : '')) + l.date + '</div>';
+    (function(lid) { item.onclick = function() { loadLesson(lid); }; })(l.id);
+    scroll.appendChild(item);
+  });
+  var addBtn = document.createElement('div');
+  addBtn.className = 'll-add';
+  addBtn.textContent = '+ ADD LESSON';
+  addBtn.onclick = function() { newLesson(unitId); };
+  scroll.appendChild(addBtn);
+}
+
+function loadLesson(lessonId) {
+  state.selLessonId = lessonId;
+  // Update list highlight
+  document.querySelectorAll('.ll-item').forEach(function(el) { el.classList.remove('active'); });
+  var lli = document.getElementById('lli-' + lessonId);
+  if (lli) lli.classList.add('active');
+  // Find lesson data
+  var allLessons = [];
+  Object.keys(SAMPLE_LESSONS).forEach(function(uid) { allLessons = allLessons.concat(SAMPLE_LESSONS[uid]); });
+  var lesson = allLessons.find(function(l) { return l.id === lessonId; });
+  if (!lesson) return;
+  activeLessonData = JSON.parse(JSON.stringify(lesson)); // deep copy
+  renderEditor(activeLessonData);
+}
+
+function renderEditorEmpty() {
+  document.getElementById('editor-panel').innerHTML = '<div class="empty-state">SELECT A LESSON</div>';
+}
+
+function renderEditor(lesson) {
+  var panel = document.getElementById('editor-panel');
+  panel.innerHTML = '';
+
+  // Top row
+  var topRow = el('div', 'ep-toprow');
+  topRow.innerHTML = '<div class="ep-title">' + lesson.title.toUpperCase() + '</div>';
+  var btns = el('div', 'ep-btns');
+  var saveBtn = elBtn('✓ SAVE', 'ep-btn ep-save', function() { saveLesson(); });
+  var delBtn  = elBtn('✕ DELETE', 'ep-btn ep-del', function() { deleteLesson(lesson.id); });
+  btns.appendChild(saveBtn); btns.appendChild(delBtn);
+  topRow.appendChild(btns);
+  panel.appendChild(topRow);
+
+  // QOTD
+  panel.appendChild(fieldBlock('QUESTION OF THE DAY', function(wrap) {
+    var ta = el('textarea', 'field-ta');
+    ta.style.height = '45px';
+    ta.value = lesson.qotd || '';
+    ta.oninput = function() { activeLessonData.qotd = this.value; };
+    wrap.appendChild(ta);
+  }));
+
+  // Agenda
+  panel.appendChild(listBlock('AGENDA', lesson.agenda, function(items) {
+    activeLessonData.agenda = items;
+  }, true));
+
+  // Presentations + Videos (two-col)
+  var twoCol = el('div', 'two-col');
+  twoCol.appendChild(urlBlock('PRESENTATIONS', lesson.presentations, function(items) {
+    activeLessonData.presentations = items;
+  }));
+  twoCol.appendChild(urlBlock('VIDEOS', lesson.videos, function(items) {
+    activeLessonData.videos = items;
+  }));
+  panel.appendChild(twoCol);
+
+  // Reminders
+  panel.appendChild(listBlock('REMINDERS', lesson.reminders, function(items) {
+    activeLessonData.reminders = items;
+  }, false));
+
+  // Image URL
+  panel.appendChild(fieldBlock('START SCREEN IMAGE URL (optional)', function(wrap) {
+    var inp = el('input', 'field-inp');
+    inp.type = 'text';
+    inp.placeholder = 'paste image URL...';
+    inp.value = lesson.image_url || '';
+    inp.oninput = function() { activeLessonData.image_url = this.value; };
+    wrap.appendChild(inp);
+  }));
+
+  // Push banner
+  var banner = el('div', 'push-banner');
+  var pushLbl = el('div', 'push-lbl');
+  pushLbl.textContent = '▶ PUSH TO CLASS COMM';
+  banner.appendChild(pushLbl);
+
+  // Determine which periods share this curriculum
+  var meta = CURRICULA_META[state.selCurId] || { classes: [] };
+  var perDiv = el('div', 'push-periods');
+  var pushSelected = {};
+  meta.classes.forEach(function(cls) {
+    var btn = el('div', 'push-per sel');
+    btn.textContent = cls.label;
+    btn.dataset.classId = cls.id;
+    pushSelected[cls.id] = true;
+    btn.onclick = function() {
+      pushSelected[cls.id] = !pushSelected[cls.id];
+      btn.className = 'push-per' + (pushSelected[cls.id] ? ' sel' : '');
+    };
+    perDiv.appendChild(btn);
+  });
+  banner.appendChild(perDiv);
+
+  var statusSpan = el('span', 'push-status');
+  var goBtn = elBtn('PUSH ▶', 'push-go', function() {
+    var ids = Object.keys(pushSelected).filter(function(k) { return pushSelected[k]; });
+    if (!ids.length) { showStatus('Select at least one period to push to', 'err'); return; }
+    doPush(lesson, ids, statusSpan);
+  });
+  banner.appendChild(goBtn);
+  banner.appendChild(statusSpan);
+  panel.appendChild(banner);
+}
+
+function fieldBlock(label, buildFn) {
+  var wrap = el('div', '');
+  var lbl = el('div', 'field-lbl');
+  lbl.textContent = label;
+  wrap.appendChild(lbl);
+  buildFn(wrap);
+  return wrap;
+}
+
+function listBlock(label, items, onChange, hasOrder) {
+  var wrap = el('div', '');
+  var lbl = el('div', 'field-lbl');
+  lbl.textContent = label;
+  wrap.appendChild(lbl);
+  var list = el('div', '');
+  list.id = 'listblock-' + label.replace(/\s/g, '_');
+
+  function renderItems() {
+    list.innerHTML = '';
+    items.forEach(function(item, i) {
+      var row = el('div', 'list-row');
+      var inp = el('input', 'list-inp');
+      inp.value = item;
+      inp.oninput = function() { items[i] = this.value; onChange(items); };
+      var del = el('span', 'list-del');
+      del.textContent = '✕';
+      (function(idx) { del.onclick = function() { items.splice(idx,1); onChange(items); renderItems(); }; })(i);
+      row.appendChild(inp); row.appendChild(del);
+      list.appendChild(row);
+    });
+    var addBtn = el('button', 'add-btn');
+    addBtn.textContent = '+ ADD';
+    addBtn.onclick = function() { items.push(''); onChange(items); renderItems(); };
+    list.appendChild(addBtn);
+  }
+  renderItems();
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function urlBlock(label, items, onChange) {
+  var wrap = el('div', 'field-grp');
+  var lbl = el('div', 'field-lbl');
+  lbl.textContent = label;
+  wrap.appendChild(lbl);
+  var list = el('div', '');
+
+  function renderItems() {
+    list.innerHTML = '';
+    items.forEach(function(item, i) {
+      var row = el('div', 'list-row');
+      var nameInp = el('input', 'list-inp');
+      nameInp.placeholder = 'label...';
+      nameInp.value = item.l || '';
+      nameInp.oninput = function() { items[i].l = this.value; onChange(items); };
+      var urlInp = el('input', 'list-url');
+      urlInp.placeholder = 'url...';
+      urlInp.value = item.url || '';
+      urlInp.oninput = function() { items[i].url = this.value; onChange(items); };
+      var del = el('span', 'list-del');
+      del.textContent = '✕';
+      (function(idx) { del.onclick = function() { items.splice(idx,1); onChange(items); renderItems(); }; })(i);
+      row.appendChild(nameInp); row.appendChild(urlInp); row.appendChild(del);
+      list.appendChild(row);
+    });
+    var addBtn = el('button', 'add-btn');
+    addBtn.textContent = '+ ADD';
+    addBtn.onclick = function() { items.push({l:'',url:''}); onChange(items); renderItems(); };
+    list.appendChild(addBtn);
+  }
+  renderItems();
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function saveLesson() {
+  if (!activeLessonData) return;
+  showStatus('Saving lesson...', '');
+  var curId = state.selCurId;
+  var payload = Object.assign({}, activeLessonData, {
+    unit_id: state.selUnitId,
+    curriculum_id: curId,
+  });
+  // Update local sample data
+  var lessons = SAMPLE_LESSONS[state.selUnitId] || [];
+  var idx = lessons.findIndex(function(l) { return l.id === activeLessonData.id; });
+  if (idx >= 0) lessons[idx] = JSON.parse(JSON.stringify(activeLessonData));
+  sheetsPost({ action:'saveLesson', data: {
+    id:            payload.id,
+    unit_id:       payload.unit_id,
+    title:         payload.title,
+    order:         payload.order,
+    qotd:          payload.qotd,
+    agenda:        payload.agenda,
+    presentations: payload.presentations,
+    videos:        payload.videos,
+    reminders:     payload.reminders,
+    image_url:     payload.image_url || '',
+    status:        payload.status || 'upcoming',
+  }}).then(function(res) {
+    if (res.error) { showStatus('Save error: ' + res.error, 'err'); return; }
+    showStatus('Lesson saved ✓', 'ok');
+  }).catch(function() {});
+}
+
+function deleteLesson(lessonId) {
+  if (!confirm('Delete this lesson? This cannot be undone.')) return;
+  showStatus('Deleting...', '');
+  sheetsPost({ action:'deleteLesson', id: lessonId }).then(function(res) {
+    if (res.error) { showStatus('Delete error: ' + res.error, 'err'); return; }
+    // Remove from local
+    var lessons = SAMPLE_LESSONS[state.selUnitId] || [];
+    var idx = lessons.findIndex(function(l) { return l.id === lessonId; });
+    if (idx >= 0) lessons.splice(idx, 1);
+    state.selLessonId = null;
+    activeLessonData = null;
+    renderLessonList(state.selUnitId);
+    renderEditorEmpty();
+    showStatus('Lesson deleted', 'ok');
+  });
+}
+
+function newLesson(unitId) {
+  var lessons = SAMPLE_LESSONS[unitId] || [];
+  var newId = 'l_' + unitId + '_' + (lessons.length + 1).toString().padStart(2,'0');
+  var newLesson = {
+    id: newId, unit_id: unitId, title: 'New Lesson', order: lessons.length + 1,
+    status: 'upcoming', date: '', qotd: '', agenda: [], presentations: [], videos: [], reminders: [], image_url: ''
+  };
+  if (!SAMPLE_LESSONS[unitId]) SAMPLE_LESSONS[unitId] = [];
+  SAMPLE_LESSONS[unitId].push(newLesson);
+  renderLessonList(unitId);
+  loadLesson(newId);
+}
+
+function doPush(lesson, classIds, statusEl) {
+  showStatus('Pushing to Class Comm...', '');
+  statusEl.textContent = 'PUSHING...';
+  sheetsPost({ action:'pushToClassComm', data: {
+    lesson_id:  lesson.id,
+    class_ids:  classIds,
+    pushed_by:  'planning',
+  }}).then(function(res) {
+    if (res.error) { statusEl.textContent = 'ERROR'; showStatus('Push error: ' + res.error, 'err'); return; }
+    var periods = classIds.map(function(id) { return (CLASSES_META[id] || {}).label || id; }).join(', ');
+    statusEl.textContent = '✓ PUSHED ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    showStatus('Pushed to Class Comm: ' + periods, 'ok');
+  }).catch(function() { statusEl.textContent = 'FAILED'; });
+}
+
+// ══════════════════════════════════════════════════
+// LAYER 4 — ROSTERS
+// ══════════════════════════════════════════════════
+var LOCAL_ROSTERS = {};  // populated from Sheets on demand
+
+function selectRoster(classId) {
+  state.selClassId = classId;
+  document.querySelectorAll('.ls-item').forEach(function(el) { el.classList.remove('active','roster-active'); });
+  var lsi = document.getElementById('lsi-' + classId);
+  if (lsi) lsi.classList.add('roster-active');
+  showLayer(4);
+  setBreadcrumb([
+    { label:'CLASSES & ROSTERS' },
+    { label:(CLASSES_META[classId] || {}).label || classId }
+  ]);
+  renderRosterClsList(classId);
+  loadRoster(classId);
+}
+
+function renderRosterClsList(activeId) {
+  var list = document.getElementById('roster-cls-list');
+  list.innerHTML = '';
+  Object.keys(CLASSES_META).forEach(function(clsId) {
+    var meta = CLASSES_META[clsId];
+    var item = document.createElement('div');
+    item.className = 'rcls-item' + (clsId === activeId ? ' active' : '');
+    item.innerHTML = '<div>' + meta.label + '</div><div class="rcls-day">' + meta.day + ' DAY · ' + meta.semester + '</div>';
+    (function(cid) { item.onclick = function() { selectRoster(cid); }; })(clsId);
+    list.appendChild(item);
+  });
+}
+
+function loadRoster(classId) {
+  var panel = document.getElementById('roster-panel');
+  var meta = CLASSES_META[classId] || {};
+  panel.innerHTML = '<div class="empty-state">LOADING ROSTER...</div>';
+  // Load from Sheets
+  sheetsGet({ action:'getRoster', class_id: classId }).then(function(res) {
+    if (res.error) {
+      // Use local cache or empty
+      renderRosterPanel(classId, LOCAL_ROSTERS[classId] || []);
+      return;
+    }
+    LOCAL_ROSTERS[classId] = res.students || [];
+    renderRosterPanel(classId, LOCAL_ROSTERS[classId]);
+  }).catch(function() {
+    renderRosterPanel(classId, LOCAL_ROSTERS[classId] || []);
+  });
+}
+
+function renderRosterPanel(classId, students) {
+  var panel = document.getElementById('roster-panel');
+  var meta = CLASSES_META[classId] || {};
+  var accCount = students.filter(function(s) { return s.accommodations || (s.acc_items && s.acc_items.length); }).length;
+  panel.innerHTML = '';
+
+  // Header
+  var hdr = el('div', 'rp-hdr');
+  var titleWrap = el('div', '');
+  titleWrap.innerHTML = '<div class="rp-title">' + (meta.label || classId) + '</div><div class="rp-meta">' + students.length + ' STUDENTS · ' + accCount + ' WITH ACCOMMODATIONS · ' + meta.semester + '</div>';
+  var actions = el('div', 'rp-actions');
+  var impBtn = elBtn('⬇ IMPORT', 'rp-btn rp-import', function() { togglePaste(classId); });
+  var saveBtn = elBtn('✓ SAVE ROSTER', 'rp-btn rp-save', function() { saveRoster(classId); });
+  actions.appendChild(impBtn); actions.appendChild(saveBtn);
+  hdr.appendChild(titleWrap); hdr.appendChild(actions);
+  panel.appendChild(hdr);
+
+  // Student list
+  var listWrap = el('div', 'student-list');
+  if (!students.length) {
+    var empty = el('div', 'empty-state');
+    empty.textContent = 'NO STUDENTS YET — USE IMPORT OR ADD MANUALLY';
+    listWrap.appendChild(empty);
+  }
+  students.forEach(function(s, i) {
+    var row = el('div', 'stu-row');
+    var hasAcc = s.accommodations || (s.acc_items && s.acc_items.length);
+    var accType = '';
+    if (hasAcc) {
+      var acc = (s.accommodations || '').toUpperCase();
+      if (acc.includes('IEP')) accType = 'acc-iep';
+      else if (acc.includes('504')) accType = 'acc-504';
+      else if (acc.includes('ELL')) accType = 'acc-ell';
+      else accType = 'acc-504';
+    }
+    var accLabel = hasAcc ? (s.accommodations || '').split(';')[0].split('|')[0].trim().substring(0,12) : '';
+    row.innerHTML =
+      '<span class="stu-num">' + (i+1) + '</span>' +
+      '<span class="stu-name">' + (s.display_name || (s.first_name + ' ' + s.last_name) || s.name || '') + '</span>' +
+      '<span class="stu-acc ' + (hasAcc ? accType : 'acc-none') + '">' + (hasAcc ? accLabel || 'ACCOMM' : '—') + '</span>';
+    var editBtn = el('button', 'stu-edit');
+    editBtn.textContent = 'i';
+    editBtn.title = hasAcc ? 'Edit requirements' : 'Add requirements';
+    (function(idx) { editBtn.onclick = function(e) { e.stopPropagation(); openAccModal(classId, idx); }; })(i);
+    var delBtn = el('span', 'stu-del');
+    delBtn.textContent = '✕';
+    (function(idx) { delBtn.onclick = function(e) { e.stopPropagation(); removeStudent(classId, idx); }; })(i);
+    row.appendChild(editBtn); row.appendChild(delBtn);
+    listWrap.appendChild(row);
+  });
+  panel.appendChild(listWrap);
+
+  // Paste / Manual add
+  var pasteArea = el('div', 'paste-area');
+  pasteArea.id = 'paste-area-' + classId;
+  pasteArea.innerHTML =
+    '<div class="paste-lbl">PASTE ROSTER (Last, First — one per line)</div>' +
+    '<textarea class="paste-ta" id="paste-ta-' + classId + '" placeholder="Smith, John&#10;Doe, Jane..."></textarea>' +
+    '<div class="paste-row">' +
+      '<button class="btn btn-amber" onclick="doPaste(\'' + classId + '\')">↓ IMPORT NAMES</button>' +
+      '<input class="manual-inp" id="manual-inp-' + classId + '" placeholder="Type name, press Enter" onkeydown="if(event.key===\'Enter\')doManual(\'' + classId + '\')">' +
+      '<button class="btn" onclick="doManual(\'' + classId + '\')">+ ADD</button>' +
+    '</div>';
+  panel.appendChild(pasteArea);
+}
+
+function doPaste(classId) {
+  var ta = document.getElementById('paste-ta-' + classId);
+  if (!ta) return;
+  var lines = ta.value.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+  if (!LOCAL_ROSTERS[classId]) LOCAL_ROSTERS[classId] = [];
+  lines.forEach(function(line) {
+    var parts = line.split(',');
+    var last  = (parts[0] || '').trim();
+    var first = (parts[1] || '').trim();
+    LOCAL_ROSTERS[classId].push({
+      id: 'stu_' + classId + '_' + Date.now() + '_' + Math.random().toString(36).substr(2,4),
+      class_id: classId,
+      first_name: first, last_name: last,
+      display_name: first + ' ' + last,
+      accommodations: '', acc_items: [], notes: ''
+    });
+  });
+  ta.value = '';
+  renderRosterPanel(classId, LOCAL_ROSTERS[classId]);
+  showStatus(lines.length + ' students imported', 'ok');
+}
+
+function doManual(classId) {
+  var inp = document.getElementById('manual-inp-' + classId);
+  if (!inp || !inp.value.trim()) return;
+  var name = inp.value.trim();
+  var parts = name.split(',');
+  var last  = (parts.length > 1 ? parts[0] : '').trim();
+  var first = (parts.length > 1 ? parts.slice(1).join(',') : name).trim();
+  if (!LOCAL_ROSTERS[classId]) LOCAL_ROSTERS[classId] = [];
+  LOCAL_ROSTERS[classId].push({
+    id: 'stu_' + classId + '_' + Date.now(),
+    class_id: classId,
+    first_name: first, last_name: last,
+    display_name: name,
+    accommodations: '', acc_items: [], notes: ''
+  });
+  inp.value = '';
+  renderRosterPanel(classId, LOCAL_ROSTERS[classId]);
+}
+
+function removeStudent(classId, idx) {
+  if (!confirm('Remove this student?')) return;
+  LOCAL_ROSTERS[classId].splice(idx, 1);
+  renderRosterPanel(classId, LOCAL_ROSTERS[classId]);
+}
+
+function saveRoster(classId) {
+  var students = LOCAL_ROSTERS[classId] || [];
+  showStatus('Saving roster...', '');
+  sheetsPost({ action:'updateRoster', class_id: classId, data: students.map(function(s) {
+    return {
+      id: s.id,
+      class_id: classId,
+      first_name: s.first_name || '',
+      last_name:  s.last_name  || '',
+      display_name: s.display_name || (s.first_name + ' ' + s.last_name),
+      accommodations: s.accommodations || (s.acc_items || []).join('; '),
+      notes: s.notes || '',
+    };
+  })}).then(function(res) {
+    if (res.error) { showStatus('Save error: ' + res.error, 'err'); return; }
+    showStatus('Roster saved — ' + students.length + ' students', 'ok');
+  });
+}
+
+function togglePaste(classId) {
+  var pa = document.getElementById('paste-area-' + classId);
+  if (pa) pa.style.display = pa.style.display === 'none' ? '' : 'none';
+}
+
+// ══════════════════════════════════════════════════
+// ACCOMMODATION MODAL
+// ══════════════════════════════════════════════════
+function openAccModal(classId, idx) {
+  state.accClassId = classId;
+  state.accStudentIdx = idx;
+  var students = LOCAL_ROSTERS[classId] || [];
+  var s = students[idx] || {};
+  state.accReqs  = !!(s.accommodations || (s.acc_items && s.acc_items.length));
+  state.accItems = (s.acc_items || []).slice();
+  if (!state.accItems.length && s.accommodations) {
+    state.accItems = s.accommodations.split(';').map(function(x) { return x.trim(); }).filter(Boolean);
+  }
+  document.getElementById('acc-modal-title').textContent = (s.display_name || s.name || 'STUDENT').toUpperCase() + ' — REQUIREMENTS';
+  document.getElementById('acc-notes').value = s.notes || '';
+  updateAccTogUI();
+  renderAccItems();
+  document.getElementById('acc-modal').classList.add('on');
+}
+
+function closeAccModal() {
+  document.getElementById('acc-modal').classList.remove('on');
+}
+
+function toggleAccReqs() {
+  state.accReqs = !state.accReqs;
+  updateAccTogUI();
+}
+
+function updateAccTogUI() {
+  var tog = document.getElementById('acc-tog');
+  var chk = document.getElementById('acc-chk');
+  var lbl = document.getElementById('acc-lbl');
+  var det = document.getElementById('acc-details');
+  if (state.accReqs) {
+    tog.classList.add('on'); chk.textContent = '✓'; lbl.textContent = 'This student has special requirements';
+    det.classList.add('on');
+  } else {
+    tog.classList.remove('on'); chk.textContent = ''; lbl.textContent = 'This student has special requirements';
+    det.classList.remove('on');
+  }
+}
+
+function renderAccItems() {
+  var list = document.getElementById('acc-items-list');
+  list.innerHTML = '';
+  state.accItems.forEach(function(item, i) {
+    var row = el('div', 'list-row');
+    var inp = el('input', 'list-inp');
+    inp.value = item; inp.style.fontSize = '11px';
+    inp.oninput = function() { state.accItems[i] = this.value; };
+    var del = el('span', 'list-del');
+    del.textContent = '✕';
+    (function(idx) { del.onclick = function() { state.accItems.splice(idx,1); renderAccItems(); }; })(i);
+    row.appendChild(inp); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+function addAccItem() {
+  var inp = document.getElementById('acc-new-item');
+  if (!inp || !inp.value.trim()) return;
+  state.accItems.push(inp.value.trim());
+  inp.value = '';
+  renderAccItems();
+}
+
+function saveAccModal() {
+  var classId = state.accClassId;
+  var idx     = state.accStudentIdx;
+  var students = LOCAL_ROSTERS[classId];
+  if (!students || idx === null) return;
+  var notes = document.getElementById('acc-notes').value;
+  students[idx].acc_items     = state.accItems.slice();
+  students[idx].accommodations = state.accReqs ? state.accItems.join('; ') + (notes ? ' | ' + notes : '') : '';
+  students[idx].notes         = notes;
+  closeAccModal();
+  renderRosterPanel(classId, students);
+  // Auto-save to Sheets
+  sheetsPost({ action:'saveStudent', data: students[idx] }).then(function(res) {
+    if (res.error) { showStatus('Acc save error: ' + res.error, 'err'); return; }
+    showStatus('Accommodations saved for ' + (students[idx].display_name || ''), 'ok');
+  });
+}
+
+// ══════════════════════════════════════════════════
+// DOM HELPERS
+// ══════════════════════════════════════════════════
+function el(tag, className) {
+  var e = document.createElement(tag);
+  if (className) e.className = className;
+  return e;
+}
+function elBtn(label, className, onclick) {
+  var b = el('button', className);
+  b.textContent = label;
+  b.onclick = onclick;
+  return b;
+}
+
+// ══════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════
+// Start on Layer 1 with UAS selected
+renderL1();
+showStatus('PLANNING LOADED', 'ok');
+setTimeout(function() { showStatus('READY', ''); }, 2000);
+</script>
+</body>
+</html>
