@@ -1,11 +1,1039 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Teacher OS Mission Control</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control — WMAA</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════
+   RESET & BASE
+══════════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{
+  background:#0a0a0a;
+  font-family:'Share Tech Mono',monospace;
+  color:#888;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ══════════════════════════════════════════════════
+   TOP BAR
+══════════════════════════════════════════════════ */
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#080808;
+  border-bottom:1px solid #1a1a1a;
+  padding:0 18px;
+  flex-shrink:0;
+  height:50px;
+}
+.brand{display:flex;flex-direction:column;justify-content:center;}
+.brand-name{
+  font-family:'Orbitron',monospace;
+  font-size:16px;
+  font-weight:700;
+  color:#00ccff;
+  letter-spacing:4px;
+  line-height:1;
+}
+.brand-sub{
+  font-size:9px;
+  color:#1a4455;
+  letter-spacing:3px;
+  margin-top:3px;
+}
+.topbar-right{display:flex;align-items:center;gap:20px;}
+
+/* Weather */
+.wx{display:flex;align-items:center;gap:10px;}
+.wx-temp{
+  font-family:'Orbitron',monospace;
+  font-size:20px;
+  font-weight:600;
+  color:#00ccff;
+  letter-spacing:1px;
+  line-height:1;
+}
+.wx-detail{display:flex;flex-direction:column;gap:2px;}
+.wx-row{font-size:10px;color:#2a4a55;letter-spacing:1px;}
+.wx-val{color:#557788;}
+
+/* Divider */
+.tdiv{width:1px;height:34px;background:#151515;}
+
+/* Clock */
+.clock-wrap{display:flex;flex-direction:column;align-items:flex-end;}
+.clock{
+  font-family:'Orbitron',monospace;
+  font-size:20px;
+  font-weight:600;
+  color:#556677;
+  letter-spacing:3px;
+  line-height:1;
+}
+.clock-date{font-size:9px;color:#223344;letter-spacing:2px;margin-top:3px;}
+
+/* ══════════════════════════════════════════════════
+   NAV
+══════════════════════════════════════════════════ */
+.nav{
+  display:flex;
+  gap:3px;
+  background:#060606;
+  border-bottom:1px solid #141414;
+  padding:5px 14px;
+  flex-shrink:0;
+  height:34px;
+  align-items:center;
+}
+.nb{
+  font-size:11px;
+  padding:3px 13px;
+  border-radius:2px;
+  border:1px solid #1a1a1a;
+  background:#0d0d0d;
+  color:#444;
+  cursor:pointer;
+  letter-spacing:1px;
+  font-family:'Share Tech Mono',monospace;
+  white-space:nowrap;
+  text-decoration:none;
+  display:inline-block;
+  transition:all 0.12s;
+}
+.nb:hover{border-color:#00ccff;color:#00ccff;background:#001a22;}
+.nb.active{border-color:#00ccff;background:#001a22;color:#00ccff;}
+
+/* ══════════════════════════════════════════════════
+   MAIN LAYOUT
+══════════════════════════════════════════════════ */
+.body{display:flex;flex:1;overflow:hidden;}
+
+/* ══════════════════════════════════════════════════
+   LEFT SIDEBAR
+══════════════════════════════════════════════════ */
+.sidebar{
+  width:210px;
+  flex-shrink:0;
+  background:#0c0c0c;
+  border-right:1px solid #141414;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* Section headers */
+.sec-hdr{
+  font-size:9px;
+  letter-spacing:3px;
+  color:#1e3344;
+  padding:7px 13px 5px;
+  border-bottom:1px solid #111;
+  flex-shrink:0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.sec-hdr-note{font-size:9px;color:#1a3300;letter-spacing:1px;}
+.sec-hdr-note.saving{color:#334400;}
+.sec-hdr-note.saved{color:#1a5c00;}
+
+/* ── TO DO ── */
+.todo-section{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  border-bottom:1px solid #1a2a1a;
+}
+.todo-list{
+  list-style:none;
+  padding:4px 0;
+  overflow-y:auto;
+  flex:1;
+}
+.todo-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 12px;
+  font-size:11px;
+  color:#556;
+  cursor:pointer;
+  letter-spacing:0.5px;
+  transition:background 0.1s;
+}
+.todo-item:hover{background:#111;color:#778;}
+.todo-item.priority .tt{color:#c8a800;}
+.todo-item.priority:hover .tt{color:#e8c800;}
+.todo-item.done-item{opacity:0.35;}
+.chk{
+  width:11px;height:11px;
+  border-radius:2px;
+  border:1px solid #2a2a2a;
+  background:#0f0f0f;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;
+}
+.chk.done{background:#071a07;border-color:#1d5c1d;color:#4db84d;}
+.tt.done{color:#1f2f1f;text-decoration:line-through;}
+.pri-flag{font-size:10px;color:#c8a800;flex-shrink:0;margin-left:auto;opacity:0.8;}
+.todo-add{
+  display:flex;gap:4px;
+  padding:5px 8px;
+  border-top:1px solid #111;
+  flex-shrink:0;
+  align-items:center;
+  background:#0a0a0a;
+}
+.ti{
+  flex:1;font-size:10px;
+  padding:3px 6px;
+  border-radius:2px;
+  border:1px solid #141414;
+  background:#111;
+  color:#778;
+  font-family:'Share Tech Mono',monospace;
+  outline:none;
+}
+.ti:focus{border-color:#1a3a1a;}
+.tpri{
+  font-size:12px;color:#2a3a2a;
+  cursor:pointer;padding:2px 5px;
+  border:1px solid #141414;
+  border-radius:2px;background:#0f0f0f;
+  font-family:'Share Tech Mono',monospace;
+  line-height:1;transition:all 0.1s;
+}
+.tpri.on{color:#c8a800;border-color:#3a2a00;background:#111000;}
+.tgo{
+  font-size:10px;padding:3px 6px;
+  border-radius:2px;
+  border:1px solid #1a3a1a;
+  background:#071a07;color:#2d8c2d;
+  cursor:pointer;
+  font-family:'Share Tech Mono',monospace;
+  letter-spacing:1px;
+  transition:all 0.1s;
+}
+.tgo:hover{color:#4db84d;border-color:#2d5c2d;}
+
+/* ── NOTES ── */
+.notes-section{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.notes-pad{
+  flex:1;
+  resize:none;
+  font-size:11px;
+  font-family:'Share Tech Mono',monospace;
+  color:#776633;
+  background:#0a0800;
+  border:none;
+  padding:8px 12px;
+  line-height:1.7;
+  outline:none;
+  width:100%;
+  min-height:0;
+}
+.notes-pad::placeholder{color:#1a1500;}
+.notes-foot{
+  font-size:9px;color:#2a2000;
+  padding:3px 12px;
+  background:#090700;
+  border-top:1px solid #1a1400;
+  flex-shrink:0;letter-spacing:1px;
+}
+
+/* ══════════════════════════════════════════════════
+   MAIN CONTENT — INBOX
+══════════════════════════════════════════════════ */
+.content{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  background:#080808;
+  overflow:hidden;
+}
+
+/* Inbox header */
+.inbox-hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:7px 15px;
+  border-bottom:1px solid #111;
+  background:#0a0a0a;
+  flex-shrink:0;
+  height:34px;
+}
+.inbox-title{font-size:10px;letter-spacing:3px;color:#1e3344;}
+.inbox-unread{
+  font-size:10px;color:#00ccff;
+  letter-spacing:1px;
+  background:#001a22;
+  border:1px solid #003344;
+  border-radius:2px;
+  padding:1px 6px;
+}
+.inbox-controls{display:flex;align-items:center;gap:8px;}
+.inbox-search{
+  font-size:10px;padding:3px 9px;
+  border-radius:2px;
+  border:1px solid #141414;
+  background:#111;
+  color:#778;
+  font-family:'Share Tech Mono',monospace;
+  width:170px;outline:none;
+}
+.inbox-search:focus{border-color:#1a3344;}
+.inbox-refresh{
+  font-size:10px;padding:2px 8px;
+  border-radius:2px;
+  border:1px solid #1a3a1a;
+  background:#071a07;
+  color:#2d5c2d;
+  cursor:pointer;
+  font-family:'Share Tech Mono',monospace;
+  letter-spacing:1px;
+}
+.inbox-refresh:hover{color:#4db84d;border-color:#2d8c2d;}
+
+/* Tabs */
+.inbox-tabs{
+  display:flex;
+  background:#060606;
+  border-bottom:1px solid #111;
+  flex-shrink:0;
+  height:26px;
+  align-items:flex-end;
+}
+.itab{
+  font-size:10px;padding:3px 13px;
+  cursor:pointer;color:#2a3a3a;
+  border-bottom:2px solid transparent;
+  letter-spacing:1px;
+  font-family:'Share Tech Mono',monospace;
+  transition:all 0.1s;
+}
+.itab:hover{color:#557788;}
+.itab.active{color:#00ccff;border-bottom-color:#00ccff;}
+
+/* Email rows */
+.inbox-list{flex:1;overflow-y:auto;}
+.inbox-list::-webkit-scrollbar{width:4px;}
+.inbox-list::-webkit-scrollbar-track{background:#080808;}
+.inbox-list::-webkit-scrollbar-thumb{background:#1a1a1a;border-radius:2px;}
+
+.erow{
+  display:flex;align-items:flex-start;
+  gap:9px;padding:7px 15px;
+  border-bottom:1px solid #0d0d0d;
+  cursor:pointer;
+  transition:background 0.1s;
+}
+.erow:hover{background:#0f0f0f;}
+.erow.unread{background:#090d0e;}
+.erow.unread:hover{background:#0d1214;}
+.udot{
+  width:5px;height:5px;
+  border-radius:50%;
+  background:#00ccff;
+  flex-shrink:0;margin-top:8px;
+  box-shadow:0 0 4px #00ccff44;
+}
+.nodot{width:5px;flex-shrink:0;}
+.eavatar{
+  width:26px;height:26px;
+  border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:bold;
+  flex-shrink:0;letter-spacing:0;
+  font-family:'Orbitron',monospace;
+}
+.ebody{flex:1;min-width:0;}
+.etop{
+  display:flex;justify-content:space-between;
+  align-items:baseline;gap:6px;
+}
+.esender{
+  font-size:11px;color:#4a5a5a;
+  white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:200px;
+  letter-spacing:0.5px;
+}
+.erow.unread .esender{color:#99aaaa;}
+.etime{font-size:9px;color:#222;white-space:nowrap;flex-shrink:0;letter-spacing:1px;}
+.erow.unread .etime{color:#1a3a3a;}
+.esubject{
+  font-size:11px;color:#3a4a4a;
+  white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;margin-top:1px;
+  letter-spacing:0.5px;
+}
+.erow.unread .esubject{color:#c8a800;}
+.esnip{
+  font-size:10px;color:#1a2a2a;
+  white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;margin-top:1px;
+}
+.erow.unread .esnip{color:#2a3a3a;}
+
+/* Loading / empty states */
+.inbox-loading{
+  display:flex;align-items:center;justify-content:center;
+  height:100px;font-size:10px;color:#1a2a2a;
+  letter-spacing:2px;
+}
+
+/* ══════════════════════════════════════════════════
+   STATUS BAR
+══════════════════════════════════════════════════ */
+.statusbar{
+  background:#060606;
+  border-top:1px solid #0f0f0f;
+  padding:2px 16px;
+  font-size:9px;color:#1a2a2a;
+  letter-spacing:1px;
+  flex-shrink:0;height:20px;
+  display:flex;align-items:center;
+  justify-content:space-between;
+}
+.status-ok{color:#1a3a00;}
+.status-err{color:#3a1a00;}
+.status-info{color:#1a3344;}
+
+/* ══════════════════════════════════════════════════
+   SCROLLBAR GLOBAL
+══════════════════════════════════════════════════ */
+.todo-list::-webkit-scrollbar{width:3px;}
+.todo-list::-webkit-scrollbar-track{background:#0a0a0a;}
+.todo-list::-webkit-scrollbar-thumb{background:#141414;border-radius:2px;}
+</style>
 </head>
 <body>
-    <h1>Teacher OS Mission Control</h1>
-    <p>Coming soon.</p>
+
+<!-- ══ TOP BAR ════════════════════════════════════ -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-name">MISSION CONTROL</div>
+    <div class="brand-sub">WEST MICHIGAN AVIATION ACADEMY</div>
+  </div>
+  <div class="topbar-right">
+    <div class="wx">
+      <div class="wx-temp" id="wx-temp">-°F</div>
+      <div class="wx-detail">
+        <div class="wx-row">WIND &nbsp;<span class="wx-val" id="wx-wind">- kt</span></div>
+        <div class="wx-row">GUST &nbsp;<span class="wx-val" id="wx-gust">-</span> · KGRR</div>
+      </div>
+    </div>
+    <div class="tdiv"></div>
+    <div class="clock-wrap">
+      <div class="clock" id="clock">-:--</div>
+      <div class="clock-date" id="dateline">------</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NAV ═══════════════════════════════════════ -->
+<div class="nav">
+  <a class="nb active">MISSION CONTROL</a>
+  <a class="nb" href="class-comm.html">CLASS COMM</a>
+  <a class="nb" href="planning.html">PLANNING</a>
+  <a class="nb" href="schedule.html">SCHEDULE</a>
+  <a class="nb" href="flight-data.html">FLIGHT DATA</a>
+  <a class="nb" href="rc-club.html">RC CLUB</a>
+</div>
+
+<!-- ══ BODY ══════════════════════════════════════ -->
+<div class="body">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- TO DO -->
+    <div class="todo-section">
+      <div class="sec-hdr">
+        <span>TO DO</span>
+        <span id="cleared-note" class="sec-hdr-note"></span>
+      </div>
+      <ul class="todo-list" id="todo-list">
+        <!-- populated by JS -->
+      </ul>
+      <div class="todo-add">
+        <input class="ti" id="new-task" type="text" placeholder="new task..." />
+        <button class="tpri" id="pri-btn" onclick="togglePri()" title="Mark as priority">!</button>
+        <button class="tgo" onclick="addTask()">+</button>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="notes-section">
+      <div class="sec-hdr">
+        <span>NOTES</span>
+        <span id="notes-status" class="sec-hdr-note">AUTO-SAVE ON</span>
+      </div>
+      <textarea class="notes-pad" id="notes-pad" placeholder="jot something down..."></textarea>
+      <div class="notes-foot" id="notes-foot">SYNCS TO GOOGLE SHEETS</div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+
+    <!-- Inbox header -->
+    <div class="inbox-hdr">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div class="inbox-title">INBOX</div>
+        <div class="inbox-unread" id="unread-badge" style="display:none;"></div>
+      </div>
+      <div class="inbox-controls">
+        <input class="inbox-search" type="text" id="srch" placeholder="search mail..." oninput="filterEmails()" />
+        <button class="inbox-refresh" onclick="loadEmails()">↺ REFRESH</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="inbox-tabs">
+      <div class="itab active" onclick="switchTab(this,'all')">ALL</div>
+      <div class="itab" onclick="switchTab(this,'school')">SCHOOL</div>
+      <div class="itab" onclick="switchTab(this,'grr')">GRR / AVIATION</div>
+      <div class="itab" onclick="switchTab(this,'student')">STUDENTS</div>
+    </div>
+
+    <!-- Email list -->
+    <div class="inbox-list" id="inbox-list">
+      <div class="inbox-loading">LOADING INBOX...</div>
+    </div>
+
+  </div><!-- /content -->
+
+</div><!-- /body -->
+
+<!-- ══ STATUS BAR ════════════════════════════════ -->
+<div class="statusbar">
+  <span id="status-msg">INITIALIZING...</span>
+  <span>MISSION CONTROL v1.0 · WMAA</span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7IKheLtXlVgJznD33z92DHp6iC5ql0KSY8ALwfS_gjaUO2EHdsEIv_QIAf1nbpE88VA/exec';
+
+// Email refresh interval — 60 seconds
+var EMAIL_REFRESH_MS = 60000;
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+var emails      = [];
+var activeTab   = 'all';
+var newPri      = false;
+var emailTimer  = null;
+
+// ══════════════════════════════════════════════════
+// UTILITY
+// ══════════════════════════════════════════════════
+function pad(n) { return n < 10 ? '0' + n : n; }
+
+function showStatus(msg, type) {
+  var el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = type || '';
+}
+
+function sheetsGet(params) {
+  var url = SCRIPT_URL + '?' + Object.keys(params).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  return fetch(url).then(function(r) { return r.json(); });
+}
+
+function sheetsPost(data) {
+  return fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify(data) })
+    .then(function(r) { return r.json(); });
+}
+
+// ══════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════
+function tick() {
+  var now = new Date();
+  var h = now.getHours(), m = now.getMinutes();
+  var ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+  document.getElementById('clock').textContent = h12 + ':' + pad(m) + ' ' + ap;
+  var days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('dateline').textContent =
+    days[now.getDay()] + ' ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+}
+tick(); setInterval(tick, 1000);
+
+// ══════════════════════════════════════════════════
+// WEATHER
+// ══════════════════════════════════════════════════
+async function loadWeather() {
+  try {
+    var r = await fetch('https://api.weather.gov/stations/KGRR/observations/latest');
+    if (!r.ok) throw new Error('wx fail');
+    var d = await r.json(), p = d.properties;
+    var c = p.temperature && p.temperature.value;
+    document.getElementById('wx-temp').textContent = c != null ? Math.round(c * 9/5 + 32) + '°F' : '-°F';
+    var ws = p.windSpeed && p.windSpeed.value;
+    document.getElementById('wx-wind').textContent = ws != null ? Math.round(ws * 0.539957) + ' kt' : '- kt';
+    var wg = p.windGust && p.windGust.value;
+    document.getElementById('wx-gust').textContent = wg != null ? Math.round(wg * 0.539957) + ' kt' : 'none';
+  } catch(e) {
+    document.getElementById('wx-wind').textContent = 'unavailable';
+  }
+}
+loadWeather();
+setInterval(loadWeather, 600000); // refresh every 10 min
+
+// ══════════════════════════════════════════════════
+// TO DO — PERSISTENCE VIA GOOGLE SHEETS
+// ══════════════════════════════════════════════════
+var TODO_SAVE_KEY  = 'mc_todos_v2';
+var TODO_DATE_KEY  = 'mc_todo_date_v2';
+var NOTES_SAVE_KEY = 'mc_notes_v2';
+var sheetsLoaded   = false;
+
+function todayStr() {
+  var n = new Date();
+  return n.getFullYear() + '-' + (n.getMonth()+1) + '-' + n.getDate();
+}
+
+// Load todos — try Sheets first, fall back to localStorage
+function loadTodos() {
+  sheetsGet({ action:'getTodoNotes' }).then(function(res) {
+    if (res.error || !res.data) {
+      loadTodosLocal();
+      return;
+    }
+    sheetsLoaded = true;
+    var raw = res.data.todos || '[]';
+    var notesVal = res.data.notes || '';
+    try {
+      var data = JSON.parse(raw);
+      checkMidnightAndRender(data);
+    } catch(e) {
+      loadTodosLocal();
+    }
+    // Load notes
+    var np = document.getElementById('notes-pad');
+    if (notesVal) np.value = notesVal;
+    showStatus('READY', 'status-ok');
+  }).catch(function() {
+    loadTodosLocal();
+  });
+}
+
+function loadTodosLocal() {
+  try {
+    var saved = localStorage.getItem(TODO_DATE_KEY);
+    var raw   = localStorage.getItem(TODO_SAVE_KEY);
+    if (!raw) { renderTodos([]); return; }
+    var data = JSON.parse(raw);
+    checkMidnightAndRender(data, saved);
+  } catch(e) { renderTodos([]); }
+  // Local notes
+  try {
+    var n = localStorage.getItem(NOTES_SAVE_KEY);
+    if (n) document.getElementById('notes-pad').value = n;
+  } catch(e) {}
+  showStatus('READY (local)', 'status-info');
+}
+
+function checkMidnightAndRender(data, savedDate) {
+  var today = todayStr();
+  if (savedDate && savedDate !== today) {
+    // New day — clear completed tasks
+    var cleared = data.filter(function(t) { return t.done; }).length;
+    data = data.filter(function(t) { return !t.done; });
+    if (cleared > 0) {
+      var note = document.getElementById('cleared-note');
+      note.textContent = cleared + ' CLEARED';
+      note.className = 'sec-hdr-note saved';
+      setTimeout(function() { note.textContent = ''; note.className = 'sec-hdr-note'; }, 5000);
+    }
+    saveTodosData(data);
+  }
+  renderTodos(data);
+}
+
+function renderTodos(data) {
+  var ul = document.getElementById('todo-list');
+  ul.innerHTML = '';
+  if (!data || !data.length) {
+    var empty = document.createElement('li');
+    empty.style.cssText = 'padding:8px 12px;font-size:10px;color:#1a2a1a;letter-spacing:1px;';
+    empty.textContent = 'no tasks';
+    ul.appendChild(empty);
+    return;
+  }
+  data.forEach(function(t) {
+    ul.appendChild(makeTodoEl(t.text, t.priority, t.done));
+  });
+  sortTodos(false);
+}
+
+function makeTodoEl(text, priority, done) {
+  var li = document.createElement('li');
+  li.className = 'todo-item' + (priority ? ' priority' : '') + (done ? ' done-item' : '');
+  li.onclick = function() { toggleTodo(li); };
+  var chkEl = document.createElement('div');
+  chkEl.className = 'chk' + (done ? ' done' : '');
+  if (done) chkEl.innerHTML = '✓';
+  var txtEl = document.createElement('span');
+  txtEl.className = 'tt' + (done ? ' done' : '');
+  txtEl.textContent = text;
+  li.appendChild(chkEl); li.appendChild(txtEl);
+  if (priority && !done) {
+    var pf = document.createElement('span');
+    pf.className = 'pri-flag'; pf.textContent = '!';
+    li.appendChild(pf);
+  }
+  return li;
+}
+
+function toggleTodo(li) {
+  var chk = li.querySelector('.chk'), txt = li.querySelector('.tt');
+  var done = !chk.classList.contains('done');
+  chk.classList.toggle('done', done); chk.innerHTML = done ? '✓' : '';
+  txt.classList.toggle('done', done); li.classList.toggle('done-item', done);
+  if (done) { li.classList.remove('priority'); var pf = li.querySelector('.pri-flag'); if (pf) pf.remove(); }
+  sortTodos(true);
+}
+
+function sortTodos(save) {
+  var ul = document.getElementById('todo-list');
+  var items = Array.from(ul.querySelectorAll('.todo-item'));
+  // Remove empty state if present
+  ul.querySelectorAll('li:not(.todo-item)').forEach(function(el) { el.remove(); });
+  items.sort(function(a, b) {
+    var ad = a.querySelector('.tt').classList.contains('done');
+    var bd = b.querySelector('.tt').classList.contains('done');
+    var ap = a.classList.contains('priority');
+    var bp = b.classList.contains('priority');
+    if (ad !== bd) return ad ? 1 : -1;
+    if (ap !== bp) return ap ? -1 : 1;
+    return 0;
+  });
+  items.forEach(function(i) { ul.appendChild(i); });
+  if (save) saveTodos();
+}
+
+var newPriority = false;
+function togglePri() {
+  newPriority = !newPriority;
+  document.getElementById('pri-btn').classList.toggle('on', newPriority);
+}
+
+function addTask() {
+  var inp = document.getElementById('new-task');
+  var val = inp.value.trim();
+  if (!val) return;
+  var li = makeTodoEl(val, newPriority, false);
+  document.getElementById('todo-list').appendChild(li);
+  // Remove empty state
+  document.querySelectorAll('#todo-list li:not(.todo-item)').forEach(function(el){ el.remove(); });
+  inp.value = ''; newPriority = false;
+  document.getElementById('pri-btn').classList.remove('on');
+  sortTodos(true);
+}
+document.getElementById('new-task').addEventListener('keydown', function(e) { if (e.key === 'Enter') addTask(); });
+
+// Save todos — Sheets + localStorage
+function saveTodos() {
+  var items = Array.from(document.querySelectorAll('#todo-list .todo-item'));
+  var data = items.map(function(li) {
+    return {
+      text:     li.querySelector('.tt').textContent,
+      done:     li.querySelector('.chk').classList.contains('done'),
+      priority: li.classList.contains('priority'),
+    };
+  });
+  saveTodosData(data);
+}
+
+function saveTodosData(data) {
+  // localStorage
+  try {
+    localStorage.setItem(TODO_SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(TODO_DATE_KEY, todayStr());
+  } catch(e) {}
+  // Sheets (debounced)
+  clearTimeout(saveTodosData._t);
+  saveTodosData._t = setTimeout(function() {
+    sheetsPost({ action:'saveTodoNotes', data:{ todos: JSON.stringify(data) } })
+      .catch(function(){});
+  }, 1500);
+}
+
+// Midnight check
+setInterval(function() {
+  try {
+    var saved = localStorage.getItem(TODO_DATE_KEY);
+    if (saved && saved !== todayStr()) loadTodos();
+  } catch(e) {}
+}, 60000);
+
+// ══════════════════════════════════════════════════
+// NOTES — PERSISTENCE VIA GOOGLE SHEETS
+// ══════════════════════════════════════════════════
+var np = document.getElementById('notes-pad');
+var nf = document.getElementById('notes-foot');
+var ns = document.getElementById('notes-status');
+var notesSaveTimer;
+
+// Load notes from localStorage as fast fallback
+try { var ln = localStorage.getItem(NOTES_SAVE_KEY); if (ln && !np.value) np.value = ln; } catch(e) {}
+
+np.addEventListener('input', function() {
+  clearTimeout(notesSaveTimer);
+  ns.textContent = 'SAVING...'; ns.className = 'sec-hdr-note saving';
+  notesSaveTimer = setTimeout(function() {
+    var val = np.value;
+    try { localStorage.setItem(NOTES_SAVE_KEY, val); } catch(e) {}
+    sheetsPost({ action:'saveTodoNotes', data:{ notes: val } })
+      .then(function() {
+        ns.textContent = 'SAVED'; ns.className = 'sec-hdr-note saved';
+        setTimeout(function() { ns.textContent = 'AUTO-SAVE ON'; ns.className = 'sec-hdr-note'; }, 2000);
+      })
+      .catch(function() {
+        ns.textContent = 'LOCAL ONLY'; ns.className = 'sec-hdr-note';
+      });
+  }, 1000);
+});
+
+// ══════════════════════════════════════════════════
+// GMAIL VIA APPS SCRIPT PROXY
+// ══════════════════════════════════════════════════
+// Avatar color palettes — aviation/tech themed
+var PALETTES = [
+  {bg:'#001a22',fg:'#00ccff',bd:'#003344'},
+  {bg:'#111000',fg:'#c8a800',bd:'#2a2200'},
+  {bg:'#071a07',fg:'#4db84d',bd:'#1a3a1a'},
+  {bg:'#1a0a00',fg:'#d4720a',bd:'#3a1a00'},
+  {bg:'#1a0000',fg:'#cc4444',bd:'#3a1010'},
+  {bg:'#0a001a',fg:'#9955cc',bd:'#1a0033'},
+];
+
+function getAvatar(name) {
+  var h = 0;
+  for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % PALETTES.length;
+  return PALETTES[h];
+}
+
+function getInitials(name) {
+  var p = name.split(' ');
+  return ((p[0] ? p[0][0] : '') + (p[1] ? p[1][0] : '')).toUpperCase();
+}
+
+function classifyEmail(sender, subject) {
+  var addr = (sender || '').toLowerCase();
+  var subj = (subject || '').toLowerCase();
+  if (addr.includes('@grr.org') || subj.includes('grr') || subj.includes('airport') ||
+      subj.includes('badge') || subj.includes('aoa') || subj.includes('wmaa') ||
+      subj.includes('aviation') || subj.includes('flite') || subj.includes('westwood')) {
+    return 'grr';
+  }
+  // Student emails — common patterns
+  if (addr.match(/\d{2}@/) || addr.includes('student') ||
+      subj.includes('grade') || subj.includes('assignment') ||
+      subj.includes('brag sheet') || subj.includes('lunch and learn')) {
+    return 'student';
+  }
+  return 'school';
+}
+
+function formatEmailTime(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  var now = new Date();
+  var diffMs = now - d;
+  var diffDays = Math.floor(diffMs / 86400000);
+  if (diffDays === 0) {
+    var h = d.getHours(), m = d.getMinutes();
+    var ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+    return h12 + ':' + pad(m) + ' ' + ap;
+  }
+  if (diffDays === 1) return 'YESTERDAY';
+  if (diffDays < 7) {
+    var days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    return days[d.getDay()];
+  }
+  var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return months[d.getMonth()] + ' ' + d.getDate();
+}
+
+// Load emails via Apps Script Gmail proxy
+// NOTE: This requires a getGmailInbox action to be added to Code.gs
+// For now uses the fetch with action=getGmailInbox — see note in Code.gs section below
+async function loadEmails() {
+  document.getElementById('inbox-list').innerHTML = '<div class="inbox-loading">LOADING INBOX...</div>';
+  showStatus('Fetching inbox...', 'status-info');
+  try {
+    var res = await sheetsGet({ action: 'getGmailInbox', maxResults: 40 });
+    if (res.error) {
+      showStatus('Gmail: ' + res.error, 'status-err');
+      renderEmailsFallback();
+      return;
+    }
+    emails = (res.threads || []).map(function(t) {
+      var tag = classifyEmail(t.sender, t.subject);
+      return {
+        id:      t.id,
+        sender:  t.senderName || t.sender || 'Unknown',
+        subject: t.subject || '(no subject)',
+        snip:    t.snippet  || '',
+        time:    formatEmailTime(t.date),
+        tag:     tag,
+        unread:  !!t.unread,
+      };
+    });
+    renderEmails(filterList());
+    updateUnreadBadge();
+    showStatus('Inbox loaded — ' + emails.length + ' threads', 'status-ok');
+    // Auto-refresh
+    clearInterval(emailTimer);
+    emailTimer = setInterval(loadEmails, EMAIL_REFRESH_MS);
+  } catch(e) {
+    showStatus('Gmail unavailable — using cached data', 'status-info');
+    renderEmailsFallback();
+  }
+}
+
+// Fallback with real-looking sample data matching your actual inbox
+function renderEmailsFallback() {
+  emails = [
+    {id:'19dbce9fbc2868e8',sender:'N. Gasper',subject:'Westwood AI & FLITE Article',snip:'Thanks for sharing — fantastic project with our students',time:'TODAY',tag:'grr',unread:true},
+    {id:'19dbb47d29754649',sender:'J. Perrin',subject:'Friday,',snip:'Message to staff at West Michigan Aviation',time:'TODAY',tag:'school',unread:true},
+    {id:'19dbf64feef31269',sender:'E. Collins',subject:'Class Counts',snip:'Class count update for this week',time:'TODAY',tag:'school',unread:true},
+    {id:'19dba50fc5b75311',sender:'C. Williams',subject:'Computer Question',snip:'Question regarding a computer issue in the lab',time:'WED',tag:'school',unread:false},
+    {id:'19daba226c6a515e',sender:'M. Grant',subject:'Confirmation of Student Enrollment',snip:'Enrollment confirmation, cc\'d G. Pavey',time:'WED',tag:'school',unread:false},
+    {id:'19db5faface791d7',sender:'N. Gasper',subject:'** Priority RC Cleanup **',snip:'RC cleanup coordination — needs attention this week',time:'TUE',tag:'school',unread:false},
+    {id:'19d92b83f7203551',sender:'P. Simms',subject:'Thank you!',snip:'Appreciation from GRR for Westwood AI / FLITE project',time:'MON',tag:'grr',unread:false},
+    {id:'19db07b867a3364a',sender:'S. Van Zegeren',subject:'AOA Badge Renewal',snip:'Badge renewal notice — action required',time:'APR 18',tag:'grr',unread:false},
+    {id:'19dac0984f4b9975',sender:'G. Pavey',subject:'WMAA CTE Advisory Meeting',snip:'Senior CTE Aviation Student Participation',time:'APR 17',tag:'grr',unread:false},
+    {id:'19db6959d8dff81e',sender:'I. Cardwell',subject:'Brag Sheet',snip:'Student brag sheet submission for portfolio',time:'TUE',tag:'student',unread:false},
+    {id:'19d9d2582480f46c',sender:'A. Barker',subject:'Westwood AI Update',snip:'Update on the Westwood AI drone project',time:'APR 19',tag:'student',unread:false},
+    {id:'19d96d3f38fcc909',sender:'A. Kooistra',subject:'UAS Grade',snip:'Grade inquiry for UAS class assignment',time:'APR 19',tag:'student',unread:false},
+    {id:'19dab11fb447f0df',sender:'K. DeYoung',subject:'RC Weekly Update',snip:'Weekly RC club progress update',time:'WED',tag:'student',unread:false},
+    {id:'19d96a6cc8c6f4e3',sender:'A. Flowers',subject:'Lunch and Learn Opportunity',snip:'Student inquiry about lunch and learn program',time:'APR 19',tag:'student',unread:false},
+  ];
+  renderEmails(filterList());
+  updateUnreadBadge();
+  showStatus('READY (cached data — Gmail proxy needed)', 'status-info');
+}
+
+function filterList() {
+  var q = document.getElementById('srch').value.toLowerCase();
+  var list = emails.filter(function(e) { return activeTab === 'all' || e.tag === activeTab; });
+  if (q) list = list.filter(function(e) {
+    return e.sender.toLowerCase().includes(q) || e.subject.toLowerCase().includes(q) || e.snip.toLowerCase().includes(q);
+  });
+  return list;
+}
+
+function filterEmails() { renderEmails(filterList()); }
+
+function switchTab(el, tab) {
+  document.querySelectorAll('.itab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  activeTab = tab;
+  filterEmails();
+}
+
+function updateUnreadBadge() {
+  var count = emails.filter(function(e) { return e.unread; }).length;
+  var badge = document.getElementById('unread-badge');
+  if (count > 0) {
+    badge.textContent = count + ' UNREAD';
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderEmails(list) {
+  var el = document.getElementById('inbox-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="inbox-loading">NO MESSAGES</div>';
+    return;
+  }
+  el.innerHTML = list.map(function(e) {
+    var p = getAvatar(e.sender);
+    var ini = getInitials(e.sender);
+    return '<div class="erow' + (e.unread ? ' unread' : '') + '" onclick="openEmail(\'' + e.id + '\',\'' + e.subject.replace(/'/g,"\\'").replace(/"/g,'\\"') + '\')">' +
+      (e.unread ? '<div class="udot"></div>' : '<div class="nodot"></div>') +
+      '<div class="eavatar" style="background:' + p.bg + ';color:' + p.fg + ';border:1px solid ' + p.bd + '">' + ini + '</div>' +
+      '<div class="ebody">' +
+        '<div class="etop"><span class="esender">' + e.sender + '</span><span class="etime">' + e.time + '</span></div>' +
+        '<div class="esubject">' + e.subject + '</div>' +
+        '<div class="esnip">' + e.snip + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openEmail(id, subject) {
+  // Opens Gmail directly in a new tab — simplest and most reliable approach
+  window.open('https://mail.google.com/mail/u/0/#inbox/' + id, '_blank');
+}
+
+// ══════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════
+loadTodos();
+loadWeather();
+
+// Try to load real emails; fall back to cached data
+loadEmails().catch(function() { renderEmailsFallback(); });
+
+showStatus('MISSION CONTROL ONLINE', 'status-ok');
+setTimeout(function() { showStatus('READY', 'status-ok'); }, 2500);
+</script>
+
+<!-- ══════════════════════════════════════════════
+  GMAIL PROXY NOTE — ADD THIS FUNCTION TO Code.gs
+  ══════════════════════════════════════════════════
+
+  To enable live Gmail inbox loading, add this function
+  to your Code.gs in Apps Script:
+
+  function getGmailInbox(maxResults) {
+    var threads = GmailApp.getInboxThreads(0, maxResults || 40);
+    return { threads: threads.map(function(t) {
+      var msg = t.getMessages()[t.getMessageCount() - 1];
+      return {
+        id:         t.getId(),
+        subject:    t.getFirstMessageSubject(),
+        sender:     msg.getFrom(),
+        senderName: msg.getFrom().replace(/<.*>/, '').trim().replace(/"/g,''),
+        snippet:    t.getSnippet(),
+        date:       msg.getDate().toISOString(),
+        unread:     t.isUnread(),
+      };
+    })};
+  }
+
+  Then add 'getGmailInbox' to the doGet switch statement:
+  case 'getGmailInbox': result = getGmailInbox(parseInt(e.parameter.maxResults)||40); break;
+
+══════════════════════════════════════════════════ -->
 </body>
 </html>
