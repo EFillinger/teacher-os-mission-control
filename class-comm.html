@@ -3,1575 +3,1034 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Class Comm</title>
+<title>Class Comm — Mission Control</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+html,body{height:100%;overflow:hidden;}
+body{background:#0a0a0a;font-family:'Share Tech Mono',monospace;color:#ccc;display:flex;flex-direction:column;}
 
-/* NAV */
-.app-nav{background:#080808;border-bottom:1px solid #222;padding:9px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
-.app-title{font-family:'Orbitron',monospace;font-size:17px;font-weight:600;color:#00ccff;letter-spacing:3px;}
-.nav-divider{width:1px;background:#222;height:28px;margin:0 4px;}
-.nav-btn{padding:7px 20px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:14px;cursor:pointer;letter-spacing:1px;border:1px solid #2a2a2a;background:#151515;color:#555;}
-.nav-btn.active{border-color:#00ccff;background:#002a33;color:#00ccff;}
+/* ── NAV ─────────────────────────────────────────── */
+.app-nav{background:#080808;border-bottom:1px solid #222;padding:6px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;height:40px;}
+.app-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:600;color:#00ccff;letter-spacing:3px;white-space:nowrap;}
+.nav-div{width:1px;background:#222;height:22px;margin:0 2px;flex-shrink:0;}
+.nb{font-size:11px;padding:3px 11px;border-radius:3px;border:1px solid #2a2a2a;background:#151515;color:#555;cursor:pointer;letter-spacing:1px;font-family:'Share Tech Mono',monospace;white-space:nowrap;text-decoration:none;display:inline-block;}
+.nb:hover{border-color:#00ccff;color:#00ccff;background:#002a33;}
+.nb.active{border-color:#00ccff;background:#002a33;color:#00ccff;}
 
-/* SCREENS */
-.screen{display:none;flex:1;overflow:hidden;flex-direction:column;}
-.screen.active{display:flex;}
-
-/* ── SHARED COMPONENTS ─────────────────────────────── */
-.panel-hdr{padding:11px 14px;border-bottom:1px solid #1e1e1e;font-size:13px;letter-spacing:2px;color:#444;}
-.panel-body{flex:1;padding:12px;overflow-y:auto;}
-.zone{border:1px solid #1e1e1e;border-radius:4px;padding:14px 16px;margin-bottom:13px;background:#111;}
-.zlbl{font-size:13px;letter-spacing:2px;color:#444;margin-bottom:11px;display:flex;justify-content:space-between;align-items:center;}
-.inp{width:100%;background:#151515;border:1px solid #1e1e1e;border-radius:3px;padding:8px 12px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:14px;outline:none;}
-.inp:focus{border-color:#333;}
-.ta{width:100%;background:#151515;border:1px solid #1e1e1e;border-radius:3px;padding:10px;color:#888;font-family:'Share Tech Mono',monospace;font-size:14px;resize:none;outline:none;}
-.ta:focus{border-color:#333;}
+/* ── SHARED ──────────────────────────────────────── */
 .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;z-index:999;}
 .modal.on{display:flex;}
 .mbox{background:#1e1e1e;border:1px solid #444;border-radius:8px;padding:20px;text-align:center;min-width:240px;}
 .mname{color:#aaa;font-size:14px;letter-spacing:1px;margin-bottom:16px;}
 .cancelbtn{background:none;border:1px solid #333;border-radius:4px;color:#888;font-family:'Share Tech Mono',monospace;font-size:13px;padding:7px 18px;cursor:pointer;}
 .cancelbtn:hover{color:#aaa;border-color:#666;}
-
-/* ── COMM CENTER ─────────────────────────────────── */
-.cc-hdr{background:#111;border-bottom:1px solid #2a2a2a;padding:9px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
-.logo{font-family:'Orbitron',monospace;font-size:15px;font-weight:600;color:#00ccff;letter-spacing:2px;white-space:nowrap;}
-.abtog{display:flex;border:1px solid #333;border-radius:3px;overflow:hidden;flex-shrink:0;}
-.cls-div{width:1px;background:#2a2a2a;height:28px;flex-shrink:0;margin:0 3px;}
-.cc-body{display:flex;flex:1;overflow:hidden;}
-.cc-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;border-right:1px solid #1e1e1e;}
-.cc-maini{flex:1;padding:16px;overflow-y:auto;}
-.cc-middle{width:240px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid #1e1e1e;background:#0f0f0f;}
-.cc-sidebar{width:270px;flex-shrink:0;display:flex;flex-direction:column;background:#0f0f0f;}
-.cc-bottom{border-top:1px solid #1e1e1e;background:#0f0f0f;flex-shrink:0;}
-.bthdr{padding:8px 16px;border-bottom:1px solid #1a1a1a;font-size:13px;letter-spacing:2px;color:#444;display:flex;justify-content:space-between;align-items:center;}
-.modearea{display:none;}
-.modearea.on{display:block;}
-.sbgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
-.sbbtn{position:relative;border-radius:3px;padding:7px 4px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;line-height:1.3;}
-.sbdots{display:flex;gap:3px;justify-content:center;margin-top:4px;}
-.sbdot{width:6px;height:6px;border-radius:50%;display:inline-block;}
-.sbex{position:absolute;bottom:2px;right:3px;font-size:9px;color:#c8a800;font-weight:bold;}
-.snbtn{padding:7px 16px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;white-space:nowrap;}
-.snbtnlg{border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:14px;cursor:pointer;padding:9px 16px;}
-.remitem{display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:14px;cursor:pointer;border-bottom:1px solid #1a1a1a;}
-.remitem:last-child{border-bottom:none;}
-.remcb{width:14px;height:14px;border-radius:2px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;}
-.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+.zone{border:1px solid #1e1e1e;border-radius:4px;padding:14px 16px;margin-bottom:12px;background:#111;}
+.zlbl{font-size:12px;letter-spacing:2px;color:#444;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.ta{width:100%;background:#151515;border:1px solid #1e1e1e;border-radius:3px;padding:10px;color:#888;font-family:'Share Tech Mono',monospace;font-size:13px;resize:none;outline:none;}
+.ta:focus{border-color:#333;}
+.panel-hdr{padding:9px 13px;border-bottom:1px solid #1e1e1e;font-size:11px;letter-spacing:2px;color:#444;}
+.panel-body{flex:1;padding:11px;overflow-y:auto;}
 .blink{animation:blink 1.2s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
-.qotd-display{background:#151515;border:1px solid #2a2a2a;border-radius:3px;padding:13px 16px;font-size:15px;color:#aaa;line-height:1.6;font-style:italic;}
-.scbtn{width:76px;height:76px;border-radius:6px;border:2px solid transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;letter-spacing:0.5px;}
-.snchkitem{padding:10px 0;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;}
+.sdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.search-row{display:flex;gap:7px;align-items:center;}
+.srch-inp{flex:1;padding:4px 8px;background:#151515;border:1px solid #1e1e1e;border-radius:2px;color:#888;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none;}
+.srch-inp:focus{border-color:#333;}
+.srch-btn{padding:4px 9px;border:1px solid #2a2a2a;border-radius:2px;background:#1a1a1a;color:#666;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;white-space:nowrap;}
+
+/* ── CC HEADER ───────────────────────────────────── */
+.cc-hdr{background:#111;border-bottom:1px solid #2a2a2a;padding:7px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+.logo{font-family:'Orbitron',monospace;font-size:14px;font-weight:600;color:#00ccff;letter-spacing:2px;white-space:nowrap;}
+.cls-div{width:1px;background:#2a2a2a;height:24px;flex-shrink:0;margin:0 2px;}
+.abtog{display:flex;border:1px solid #333;border-radius:3px;overflow:hidden;flex-shrink:0;}
+.abtog button{padding:3px 7px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;border:none;letter-spacing:1px;}
+
+/* ── PUSH INDICATOR ──────────────────────────────── */
+.push-indicator{display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:2px;font-size:10px;letter-spacing:1px;flex-shrink:0;}
+.push-indicator.loaded{background:#0a1f0a;border:1px solid #1a3a1a;color:#4db84d;}
+.push-indicator.empty{background:#1a1500;border:1px solid #2a2200;color:#554400;}
+.push-dot{width:5px;height:5px;border-radius:50%;}
+
+/* ── LAYOUT ──────────────────────────────────────── */
+.cc-body{display:flex;flex:1;overflow:hidden;}
+.cc-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;border-right:1px solid #1e1e1e;}
+.cc-maini{flex:1;padding:14px;overflow-y:auto;}
+.cc-middle{width:230px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid #1e1e1e;background:#0f0f0f;}
+.cc-sidebar{width:260px;flex-shrink:0;display:flex;flex-direction:column;background:#0f0f0f;}
+.cc-bottom{border-top:1px solid #1e1e1e;background:#0f0f0f;flex-shrink:0;}
+
+/* ── MODE AREAS ──────────────────────────────────── */
+.modearea{display:none;}
+.modearea.on{display:block;}
+
+/* ── START MODE ──────────────────────────────────── */
+.qotd-display{background:#151515;border:1px solid #2a2a2a;border-radius:3px;padding:12px 14px;font-size:14px;color:#aaa;line-height:1.6;font-style:italic;}
+.agenda-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a1a1a;font-size:13px;color:#888;}
+.agenda-item:last-child{border-bottom:none;}
+.agenda-num{color:#c8a800;font-size:11px;width:18px;flex-shrink:0;text-align:right;}
+.no-push-banner{background:#1a1500;border:1px solid #2a2200;border-radius:4px;padding:14px 16px;text-align:center;}
+.npb-title{font-size:12px;color:#554400;letter-spacing:2px;margin-bottom:6px;}
+.npb-sub{font-size:11px;color:#332200;letter-spacing:1px;}
+
+/* ── PRESENT MODE ────────────────────────────────── */
+.pres-btn{display:block;width:100%;text-align:left;padding:5px 10px;margin-bottom:4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;}
+.pres-btn.primary{border:1px solid #c8a800;background:#1a1500;color:#c8a800;}
+.pres-btn.secondary{border:1px solid #2a2a2a;background:#1a1a1a;color:#666;}
+
+/* ── WORK MODE ───────────────────────────────────── */
+.timer-bar{display:flex;align-items:center;gap:8px;background:#151515;border:1px solid #1e1e1e;border-radius:3px;padding:6px 12px;margin-bottom:10px;}
+.timer-disp{font-family:'Orbitron',monospace;font-size:20px;color:#c8a800;letter-spacing:2px;}
+.timer-btn{padding:4px 10px;border:1px solid #2a2a2a;border-radius:2px;background:#1a1a1a;color:#777;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;}
+
+/* ── CLOSE MODE ──────────────────────────────────── */
+.summary-row{font-size:13px;color:#444;line-height:2.4;}
+.summary-val{color:#aaa;}
+.summary-val.green{color:#4db84d;}
+.summary-val.amber{color:#c8a800;}
+.exp-btn{padding:3px 8px;margin:2px;border:1px solid #2a2a2a;border-radius:2px;background:#1a1a1a;color:#666;font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;}
+
+/* ── STATUS BOARD ────────────────────────────────── */
+.sbgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.sbbtn{position:relative;border-radius:3px;padding:6px 3px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;line-height:1.3;}
+.sbdots{display:flex;gap:2px;justify-content:center;margin-top:3px;}
+.sbdot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+.sbex{position:absolute;bottom:2px;right:2px;font-size:8px;color:#c8a800;font-weight:bold;}
+
+/* ── SCORE MODAL ─────────────────────────────────── */
+.scbtn{width:70px;height:70px;border-radius:5px;border:2px solid transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;letter-spacing:0.5px;}
+
+/* ── ACCOMMODATIONS BOTTOM ───────────────────────── */
+.bthdr{padding:6px 14px;border-bottom:1px solid #1a1a1a;font-size:11px;letter-spacing:2px;color:#444;display:flex;justify-content:space-between;align-items:center;}
+.snbtn{padding:5px 12px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;white-space:nowrap;}
+.snbtnlg{border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;padding:7px 12px;}
+.snchkitem{padding:8px 0;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;}
 .snchkitem:last-child{border-bottom:none;}
-.search-row{display:flex;gap:8px;align-items:center;}
 
-/* ── PREP SCREEN ────────────────────────────────────── */
-.ps-hdr{background:#111;border-bottom:1px solid #2a2a2a;padding:9px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
-.ps-body{display:flex;flex:1;overflow:hidden;}
-.ps-left{width:215px;flex-shrink:0;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;background:#0f0f0f;}
-.ps-mid{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;border-right:1px solid #1e1e1e;}
-.ps-mid-hdr{padding:9px 16px;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;background:#111;flex-shrink:0;gap:10px;}
-.ps-mid-body{flex:1;padding:16px;overflow-y:auto;}
-.ps-right{width:255px;flex-shrink:0;display:flex;flex-direction:column;background:#0f0f0f;}
-.pitem{padding:10px 13px;border:1px solid #222;border-radius:3px;margin-bottom:6px;cursor:pointer;font-size:14px;color:#555;}
-.pitem.on{background:#1a1500;border-color:#c8a800;color:#c8a800;}
-.rlesson{padding:8px 10px;border:1px solid #1e1e1e;border-radius:3px;margin-bottom:4px;cursor:pointer;font-size:14px;color:#555;background:#151515;}
-.rlesson.on{border-color:#c8a800;color:#c8a800;background:#1a1500;}
-.tag{display:inline-block;font-size:11px;padding:2px 6px;border-radius:2px;margin-left:5px;vertical-align:middle;background:#1a1500;color:#c8a800;border:1px solid #443300;}
-.zact{font-size:12px;color:#336;cursor:pointer;border:1px solid #223;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;}
-.zact:hover{color:#00ccff;border-color:#00ccff;}
-.arow{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
-.lrow{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
-.adel{font-size:14px;color:#333;cursor:pointer;padding:0 4px;}
-.adel:hover{color:#c03030;}
-.dbx{background:#0a0a00;border:1px solid #2a2a00;border-radius:3px;padding:10px;font-size:13px;color:#555;line-height:1.7;}
-.dent{border-bottom:1px solid #1a1a00;padding-bottom:6px;margin-bottom:6px;}
-.dent:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
-.ddate{color:#c8a800;font-size:11px;}
-.ltag{font-size:11px;padding:3px 7px;border-radius:2px;white-space:nowrap;}
-
-/* SETTINGS OVERLAY */
-.ov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:100;align-items:center;justify-content:center;}
-.ov.on{display:flex;}
-.ovpanel{background:#111;border:1px solid #333;border-radius:8px;width:88%;max-width:700px;max-height:92%;display:flex;flex-direction:column;overflow:hidden;}
-.ovhdr{padding:12px 16px;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.ovtitle{font-family:'Orbitron',monospace;font-size:13px;color:#c8a800;letter-spacing:2px;}
-.ovbody{flex:1;overflow-y:auto;padding:16px;}
-.ptab{padding:8px 18px;font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:1px;cursor:pointer;color:#444;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;}
-.tc{display:none;}
-.tc.on{display:block;}
-.srow{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:center;margin-bottom:9px;padding:10px 12px;border:1px solid #1e1e1e;border-radius:4px;background:#151515;}
-.rmethods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.rmethod{border:1px solid #1e1e1e;border-radius:4px;padding:12px;background:#151515;}
-.slist{max-height:240px;overflow-y:auto;margin-top:8px;}
-.strow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a1a1a;font-size:14px;color:#666;}
-.strow:last-child{border-bottom:none;}
-
-/* REQ OVERLAY */
-.rov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.93);z-index:150;align-items:center;justify-content:center;}
-.rov.on{display:flex;}
-.rpanel{background:#161616;border:1px solid #444;border-radius:8px;width:360px;max-height:88%;display:flex;flex-direction:column;overflow:hidden;}
-.rpbody{flex:1;overflow-y:auto;padding:12px;}
-
-/* EXPORT MODAL */
+/* ── EXPORT MODAL ────────────────────────────────── */
 .exp-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;z-index:999;}
 .exp-modal.on{display:flex;}
+
+/* ── STATUS BAR ──────────────────────────────────── */
+.statusbar{background:#080808;border-top:1px solid #1a1a1a;padding:2px 14px;font-size:9px;color:#2a2a2a;letter-spacing:1px;flex-shrink:0;height:20px;display:flex;align-items:center;justify-content:space-between;}
+.status-ok{color:#2d5c00;}
+.status-err{color:#5c1a1a;}
 </style>
 </head>
 <body>
 
-<!-- APP NAV -->
+<!-- ══ NAV ══════════════════════════════════════════ -->
 <div class="app-nav">
   <div class="app-title">CLASS COMM</div>
-  <div class="nav-divider"></div>
-  <button class="nav-btn active" id="nav-cc" onclick="showScreen('cc')">⬛ COMM CENTER</button>
-  <button class="nav-btn" id="nav-prep" onclick="showScreen('prep')">✎ LESSON PREP</button>
-  <button onclick="forceReloadLessons()" style="padding:7px 15px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:1px;border:1px solid #553300;background:#1a1000;color:#ff9900;">↻ RELOAD</button>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:14px;">
-    <button onclick="manualRefresh()" style="padding:5px 14px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:1px;border:1px solid #2d8c2d;background:#0a1f0a;color:#4db84d;">↺ REFRESH</button>
-    <div style="font-family:'Orbitron',monospace;font-size:15px;color:#888;" id="main-clock">--:--</div>
+  <div class="nav-div"></div>
+  <a class="nb" href="index.html">MISSION CONTROL</a>
+  <a class="nb active">CLASS COMM</a>
+  <a class="nb" href="planning.html">PLANNING</a>
+  <a class="nb" href="schedule.html">SCHEDULE</a>
+  <a class="nb" href="flight-data.html">FLIGHT DATA</a>
+  <a class="nb" href="rc-club.html">RC CLUB</a>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+    <button onclick="manualRefresh()" style="padding:3px 10px;border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;border:1px solid #2d5c00;background:#0a1f0a;color:#4db84d;letter-spacing:1px;">↺ REFRESH</button>
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:#666;" id="main-clock">--:--</div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     COMM CENTER SCREEN
-═══════════════════════════════════════════════════ -->
-<div class="screen active" id="screen-cc">
+<!-- ══ SCORE MODAL ═══════════════════════════════════ -->
+<div class="modal" id="score-modal">
+  <div class="mbox">
+    <div class="mname" id="score-name"></div>
+    <div style="display:flex;gap:7px;justify-content:center;margin-bottom:12px;">
+      <button class="scbtn" style="border-color:#4caf50;background:#1a3a1a;color:#7ddb7d;" onclick="logScore('g')">CORRECT</button>
+      <button class="scbtn" style="border-color:#c8a800;background:#3a3200;color:#e8c800;" onclick="logScore('y')">PARTIAL</button>
+      <button class="scbtn" style="border-color:#c03030;background:#3a0a0a;color:#e05050;" onclick="logScore('r')">WRONG</button>
+      <button class="scbtn" style="border-color:#00ccff;background:#003a3a;color:#00ccff;font-size:15px;font-weight:bold;" onclick="showBehaviorModal()">i</button>
+    </div>
+    <button class="cancelbtn" onclick="closeScore()">CANCEL</button>
+  </div>
+</div>
 
-  <!-- SCORE MODAL -->
-  <div class="modal" id="score-modal">
-    <div class="mbox">
-      <div class="mname" id="score-name"></div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">
-        <button class="scbtn" style="border-color:#4caf50;background:#1a3a1a;color:#7ddb7d;" onclick="logScore('g')">CORRECT</button>
-        <button class="scbtn" style="border-color:#c8a800;background:#3a3200;color:#e8c800;" onclick="logScore('y')">PARTIAL</button>
-        <button class="scbtn" style="border-color:#c03030;background:#3a0a0a;color:#e05050;" onclick="logScore('r')">WRONG</button>
-        <button class="scbtn" style="border-color:#00ccff;background:#003a3a;color:#00ccff;font-size:16px;font-weight:bold;letter-spacing:0;" onclick="showBehaviorModal()">i</button>
-      </div>
-      <button class="cancelbtn" onclick="closeScore()">CANCEL</button>
+<!-- ══ BEHAVIOR MODAL ════════════════════════════════ -->
+<div class="modal" id="behavior-modal">
+  <div class="mbox">
+    <div class="mname" id="behavior-name"></div>
+    <textarea id="behavior-text" style="width:100%;height:65px;margin-bottom:10px;padding:7px;background:#151515;border:1px solid #2a2a2a;border-radius:3px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;resize:none;outline:none;" placeholder="Log behavior note..."></textarea>
+    <div style="display:flex;gap:7px;justify-content:center;">
+      <button style="padding:5px 12px;background:#0a1f0a;border:1px solid #4db84d;border-radius:3px;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="saveBehavior()">SAVE NOTE</button>
+      <button class="cancelbtn" onclick="closeBehavior()">CANCEL</button>
     </div>
   </div>
+</div>
 
-  <!-- BEHAVIOR MODAL -->
-  <div class="modal" id="behavior-modal">
-    <div class="mbox">
-      <div class="mname" id="behavior-name"></div>
-      <textarea id="behavior-text" style="width:100%;height:70px;margin-bottom:10px;padding:7px;background:#151515;border:1px solid #2a2a2a;border-radius:3px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;resize:none;outline:none;" placeholder="Log behavior note..."></textarea>
-      <div style="display:flex;gap:8px;justify-content:center;">
-        <button style="padding:6px 14px;background:#0a1f0a;border:1px solid #4db84d;border-radius:4px;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="saveBehavior()">SAVE NOTE</button>
-        <button class="cancelbtn" onclick="closeBehavior()">CANCEL</button>
-      </div>
+<!-- ══ SN MODAL ══════════════════════════════════════ -->
+<div class="modal" id="sn-modal">
+  <div class="mbox" style="min-width:250px;">
+    <div class="mname" id="sn-name"></div>
+    <div id="sn-items" style="text-align:left;margin-bottom:12px;"></div>
+    <button class="cancelbtn" onclick="closeSN()">CLOSE</button>
+  </div>
+</div>
+
+<!-- ══ PICK MODAL ════════════════════════════════════ -->
+<div class="modal" id="pick-modal">
+  <div class="mbox" style="min-width:270px;">
+    <div style="font-size:10px;letter-spacing:2px;color:#555;margin-bottom:8px;">SUGGESTED STUDENT</div>
+    <div style="font-family:'Orbitron',monospace;font-size:22px;letter-spacing:2px;margin-bottom:6px;" id="pick-name"></div>
+    <div id="pick-tier" style="font-size:12px;margin-bottom:4px;"></div>
+    <div id="pick-reason" style="font-size:10px;color:#444;letter-spacing:1px;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:7px;justify-content:center;margin-bottom:9px;">
+      <button style="padding:6px 12px;border-radius:3px;border:1px solid #4db84d;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="callOnPick()">✓ CALL ON</button>
+      <button style="padding:6px 12px;border-radius:3px;border:1px solid #c8a800;background:#1a1500;color:#c8a800;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="nextPick()">↻ NEXT</button>
+    </div>
+    <button class="cancelbtn" onclick="closePick()">CANCEL</button>
+  </div>
+</div>
+
+<!-- ══ DEBRIEF MODAL ══════════════════════════════════ -->
+<div class="modal" id="debrief-modal">
+  <div class="mbox" style="min-width:290px;">
+    <div class="mname">ADD DEBRIEF NOTE</div>
+    <textarea id="debrief-text" style="width:100%;height:75px;margin-bottom:10px;padding:7px;background:#151515;border:1px solid #2a2a2a;border-radius:3px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;resize:none;outline:none;" placeholder="Notes on how this lesson went..."></textarea>
+    <div style="display:flex;gap:7px;justify-content:center;">
+      <button style="padding:5px 12px;background:#0a1f0a;border:1px solid #4db84d;border-radius:3px;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="saveDebrief()">SAVE</button>
+      <button class="cancelbtn" onclick="document.getElementById('debrief-modal').classList.remove('on')">CANCEL</button>
     </div>
   </div>
+</div>
 
-  <!-- SN MODAL -->
-  <div class="modal" id="sn-modal">
-    <div class="mbox" style="min-width:260px;">
-      <div class="mname" id="sn-name"></div>
-      <div id="sn-items" style="text-align:left;margin-bottom:14px;"></div>
-      <button class="cancelbtn" onclick="closeSN()">CLOSE</button>
+<!-- ══ EXPORT MODAL ═══════════════════════════════════ -->
+<div class="exp-modal" id="export-modal">
+  <div class="mbox" style="min-width:280px;">
+    <div class="mname" id="export-title">EXPORT LOG</div>
+    <div style="font-size:10px;color:#444;margin-bottom:14px;letter-spacing:1px;">SELECT TIME RANGE</div>
+    <div style="display:flex;gap:7px;justify-content:center;margin-bottom:11px;">
+      <button style="padding:6px 12px;border-radius:3px;border:1px solid #2a2a2a;background:#1a1a1a;color:#777;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="doExport('today')">TODAY</button>
+      <button style="padding:6px 12px;border-radius:3px;border:1px solid #2a2a2a;background:#1a1a1a;color:#777;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="doExport('week')">THIS WEEK</button>
+      <button style="padding:6px 12px;border-radius:3px;border:1px solid #2a2a2a;background:#1a1a1a;color:#777;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="doExport('all')">ALL TIME</button>
     </div>
+    <button class="cancelbtn" onclick="closeExport()">CANCEL</button>
   </div>
+</div>
 
-  <!-- PICK MODAL -->
-  <div class="modal" id="pick-modal">
-    <div class="mbox" style="min-width:280px;">
-      <div style="font-size:11px;letter-spacing:2px;color:#555;margin-bottom:10px;">SUGGESTED STUDENT</div>
-      <div style="font-family:'Orbitron',monospace;font-size:24px;letter-spacing:2px;margin-bottom:8px;" id="pick-name"></div>
-      <div id="pick-tier" style="font-size:13px;margin-bottom:5px;"></div>
-      <div id="pick-reason" style="font-size:11px;color:#555;letter-spacing:1px;margin-bottom:20px;"></div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
-        <button style="padding:7px 14px;border-radius:4px;border:1px solid #4db84d;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="callOnPick()">✓ CALL ON</button>
-        <button style="padding:7px 14px;border-radius:4px;border:1px solid #c8a800;background:#1a1500;color:#c8a800;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="nextPick()">↻ NEXT</button>
-      </div>
-      <button class="cancelbtn" onclick="closePick()">CANCEL</button>
-    </div>
+<!-- ══ CC HEADER ═════════════════════════════════════ -->
+<div class="cc-hdr">
+  <div class="logo">COMM CTR</div>
+  <div class="abtog">
+    <button id="abtn-A" onclick="setDay('A')">A DAY</button>
+    <button id="abtn-B" onclick="setDay('B')">B DAY</button>
   </div>
-
-  <!-- EXPORT MODAL -->
-  <div class="exp-modal" id="export-modal">
-    <div class="mbox" style="min-width:300px;">
-      <div class="mname" id="export-title">EXPORT LOG</div>
-      <div style="font-size:10px;color:#555;margin-bottom:16px;letter-spacing:1px;">SELECT TIME RANGE</div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">
-        <button style="padding:8px 14px;border-radius:4px;border:1px solid #2a2a2a;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;" onclick="doExport('today')">TODAY</button>
-        <button style="padding:8px 14px;border-radius:4px;border:1px solid #2a2a2a;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;" onclick="doExport('week')">THIS WEEK</button>
-        <button style="padding:8px 14px;border-radius:4px;border:1px solid #2a2a2a;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;" onclick="doExport('all')">ALL TIME</button>
-      </div>
-      <button class="cancelbtn" onclick="closeExport()">CANCEL</button>
-    </div>
+  <div class="cls-div"></div>
+  <div id="cls-btns" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+  <div class="cls-div"></div>
+  <!-- Push indicator -->
+  <div class="push-indicator empty" id="push-indicator">
+    <div class="push-dot" style="background:#554400;"></div>
+    <span id="push-label">NO LESSON LOADED</span>
   </div>
+  <div style="display:flex;gap:4px;align-items:center;margin-left:auto;" id="modebtnrow"></div>
+</div>
 
-  <!-- DEBRIEF MODAL -->
-  <div class="modal" id="debrief-modal">
-    <div class="mbox" style="min-width:300px;">
-      <div class="mname">ADD DEBRIEF NOTE</div>
-      <textarea id="debrief-text" style="width:100%;height:80px;margin-bottom:10px;padding:7px;background:#151515;border:1px solid #2a2a2a;border-radius:3px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;resize:none;outline:none;" placeholder="Notes on how this lesson went..."></textarea>
-      <div style="display:flex;gap:8px;justify-content:center;">
-        <button style="padding:6px 14px;background:#0a1f0a;border:1px solid #4db84d;border-radius:4px;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;" onclick="saveDebrief()">SAVE</button>
-        <button class="cancelbtn" onclick="document.getElementById('debrief-modal').classList.remove('on')">CANCEL</button>
-      </div>
-    </div>
-  </div>
+<!-- ══ CC BODY ═══════════════════════════════════════ -->
+<div class="cc-body">
 
-  <!-- CC HEADER -->
-  <div class="cc-hdr">
-    <div class="logo">COMM CTR</div>
-    <div class="abtog">
-      <button id="abtn-A" onclick="setDay('A')" style="padding:3px 7px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;border:none;letter-spacing:1px;">A DAY</button>
-      <button id="abtn-B" onclick="setDay('B')" style="padding:3px 7px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;border:none;letter-spacing:1px;">B DAY</button>
-    </div>
-    <div class="cls-div"></div>
-    <div id="cls-btns" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
-    <div class="cls-div"></div>
-    <div style="display:flex;gap:5px;align-items:center;margin-left:auto;">
-      <button onclick="showScreen('prep')" style="padding:6px 16px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;letter-spacing:1px;border:1px solid #00ccff;background:#002a33;color:#00ccff;">PREP</button>
-      <div style="display:flex;gap:4px;" id="modebtnrow"></div>
-      <div style="font-family:'Orbitron',monospace;font-size:16px;color:#888;min-width:85px;text-align:right;" id="cc-clock">--:--</div>
-    </div>
-  </div>
+  <!-- MAIN CONTENT -->
+  <div class="cc-main">
+    <div class="cc-maini">
 
-  <!-- CC BODY -->
-  <div class="cc-body">
-    <div class="cc-main">
-      <div class="cc-maini">
-
-        <!-- START MODE -->
-        <div class="modearea on" id="mode-start">
-          <div class="zone">
-            <div class="zlbl">TODAY'S AGENDA</div>
-            <div id="agenda-display" style="font-size:14px;color:#555;line-height:2.1;"></div>
-          </div>
-          <div class="zone">
-            <div class="zlbl">QUESTION OF THE DAY</div>
-            <div class="qotd-display" id="qotd-display"></div>
-          </div>
-          <div class="zone">
-            <div class="zlbl">PROJECTOR LAUNCH</div>
-            <button onclick="launchProjector()" style="padding:4px 10px;border:1px solid #c8a800;border-radius:3px;background:#1a1500;color:#c8a800;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;">⬛ LAUNCH START SCREEN</button>
-          </div>
-          <div class="zone">
-            <div class="zlbl">CLASS STATUS</div>
-            <div id="class-status" style="font-size:13px;color:#444;line-height:2.1;"></div>
-          </div>
+      <!-- START MODE -->
+      <div class="modearea on" id="mode-start">
+        <div class="zone">
+          <div class="zlbl">TODAY'S AGENDA</div>
+          <div id="agenda-display" style="font-size:13px;color:#555;line-height:2.2;"></div>
         </div>
-
-        <!-- PRESENT MODE -->
-        <div class="modearea" id="mode-present">
-          <div class="zone">
-            <div class="zlbl">PRESENTATIONS</div>
-            <div id="pres-list"></div>
-          </div>
-          <div class="zone">
-            <div class="zlbl">VIDEO</div>
-            <div id="vid-list"></div>
-          </div>
-          <div class="zone">
-            <div class="zlbl">IMAGE SEARCH</div>
-            <div class="search-row">
-              <input type="text" id="img-search-inp" placeholder="search for an image..." style="flex:1;padding:5px 8px;background:#151515;border:1px solid #2a2a2a;border-radius:3px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none;" onkeydown="if(event.key==='Enter')imgSearch()">
-              <button onclick="imgSearch()" style="padding:4px 10px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">SEARCH</button>
-            </div>
-          </div>
-          <div class="zone">
-            <div class="zlbl">YOUTUBE SEARCH</div>
-            <div class="search-row">
-              <input type="text" id="yt-search-inp" placeholder="search YouTube..." style="flex:1;padding:5px 8px;background:#151515;border:1px solid #2a2a2a;border-radius:3px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none;" onkeydown="if(event.key==='Enter')ytSearch()">
-              <button onclick="ytSearch()" style="padding:4px 10px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">SEARCH</button>
-            </div>
-          </div>
-          <div class="zone">
-            <div class="zlbl">QUESTION BANK</div>
-            <textarea id="question-bank" class="ta" style="height:90px;" placeholder="Type questions to ask students during this lesson...&#10;&#10;These are for your reference only."></textarea>
-          </div>
+        <div class="zone">
+          <div class="zlbl">QUESTION OF THE DAY</div>
+          <div class="qotd-display" id="qotd-display">—</div>
         </div>
-
-        <!-- WORK MODE -->
-        <div class="modearea" id="mode-work">
-          <div style="display:flex;align-items:center;gap:10px;background:#151515;border:1px solid #1e1e1e;border-radius:4px;padding:7px 14px;margin-bottom:10px;">
-            <span style="font-size:12px;color:#444;letter-spacing:1px;">TIMER</span>
-            <span style="font-family:'Orbitron',monospace;font-size:22px;color:#c8a800;" id="timer-disp">0:00</span>
-            <button id="timer-start-btn" onclick="startTimer()" style="padding:5px 12px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;">▶ START</button>
-            <button onclick="resetTimer()" style="padding:5px 12px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;">↺ RESET</button>
-          </div>
-          <div class="zone">
-            <div class="zlbl">NOTES</div>
-            <textarea class="ta" style="height:120px;" placeholder="Work session notes..."></textarea>
-          </div>
+        <div class="zone">
+          <div class="zlbl">PROJECTOR LAUNCH</div>
+          <button onclick="launchProjector()" style="padding:4px 10px;border:1px solid #c8a800;border-radius:2px;background:#1a1500;color:#c8a800;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;">⬛ LAUNCH START SCREEN</button>
         </div>
-
-        <!-- CLOSE MODE -->
-        <div class="modearea" id="mode-close">
-          <div class="zone">
-            <div class="zlbl">SESSION SUMMARY</div>
-            <div style="font-size:14px;color:#555;line-height:2.2;">
-              Questions asked: <span style="color:#aaa;" id="close-asked">0</span><br>
-              Students called on: <span style="color:#aaa;" id="close-called">0</span><br>
-              Accommodations logged: <span style="color:#4db84d;" id="close-acc">0</span><br>
-              Behavior notes logged: <span style="color:#c8a800;" id="close-beh">0</span>
-            </div>
-          </div>
-          <div class="zone">
-            <div class="zlbl">NEXT CLASS NOTES</div>
-            <textarea class="ta" style="height:80px;" placeholder="Notes for next class..."></textarea>
-          </div>
-          <div class="zone">
-            <div class="zlbl">EXPORT</div>
-            <button onclick="openExport('Accommodations Log')" style="padding:3px 8px;margin:2px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;">↓ ACCOMMODATIONS LOG</button>
-            <button onclick="openExport('Question Log')" style="padding:3px 8px;margin:2px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;">↓ QUESTION LOG</button>
-            <button onclick="openExport('Behavior Log')" style="padding:3px 8px;margin:2px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;">↓ BEHAVIOR LOG</button>
-            <br><br>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button onclick="document.getElementById('debrief-modal').classList.add('on')" style="padding:4px 10px;border:1px solid #c8a800;border-radius:3px;background:#1a1500;color:#c8a800;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;">+ DEBRIEF NOTE</button>
-              <button onclick="showScreen('prep')" style="padding:4px 10px;border:1px solid #00ccff;border-radius:3px;background:#002a33;color:#00ccff;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;">▶ OPEN PREP SCREEN</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- MIDDLE — NOTES/REMINDERS -->
-    <div class="cc-middle">
-      <div class="panel-hdr">NOTES / REMINDERS</div>
-      <div class="panel-body">
-        <div style="font-size:9px;letter-spacing:1px;color:#444;margin-bottom:5px;">REMINDERS</div>
-        <div id="rem-list"></div>
-        <div style="font-size:9px;letter-spacing:1px;color:#444;margin:10px 0 4px;">NOTES</div>
-        <textarea class="ta" style="height:150px;" placeholder="notes..."></textarea>
-      </div>
-    </div>
-
-    <!-- SIDEBAR — STATUS BOARD -->
-    <div class="cc-sidebar">
-      <div class="panel-hdr" id="sb-header">STATUS BOARD</div>
-      <div class="panel-body">
-        <div class="sbgrid" id="sb-grid"></div>
-        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">
-          <span style="font-size:10px;color:#00ccff;">■ strong</span>
-          <span style="font-size:10px;color:#4db84d;">■ good</span>
-          <span style="font-size:10px;color:#c8a800;">■ mixed</span>
-          <span style="font-size:10px;color:#d4720a;">■ struggling</span>
-          <span style="font-size:10px;color:#c03030;">■ needs help</span>
+        <div class="zone">
+          <div class="zlbl">CLASS STATUS</div>
+          <div id="class-status" style="font-size:12px;color:#444;line-height:2.2;"></div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- BOTTOM — ACCOMMODATIONS -->
-  <div class="cc-bottom">
-    <div class="bthdr">
-      <span>ACCOMMODATIONS</span>
-      <span style="color:#333;font-size:9px;" id="acc-count"></span>
-    </div>
-    <div id="bt-compact" style="padding:6px 10px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
-      <div id="sn-compact-btns" style="display:flex;gap:5px;flex-wrap:wrap;flex:1;"></div>
-      <button onclick="pickStudent()" style="padding:7px 16px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;border:1px solid #00ccff;background:#002a33;color:#00ccff;letter-spacing:1px;">PICK STUDENT</button>
-    </div>
-    <div id="sn-expanded" style="display:none;padding:8px 12px;gap:8px;align-items:flex-start;flex-wrap:wrap;">
-      <div id="sn-expanded-btns" style="display:flex;gap:8px;flex-wrap:wrap;flex:1;align-items:flex-start;"></div>
-      <button onclick="pickStudent()" style="padding:7px 16px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;border:1px solid #00ccff;background:#002a33;color:#00ccff;letter-spacing:1px;margin-top:4px;">PICK STUDENT</button>
-    </div>
-  </div>
-
-</div><!-- end screen-cc -->
-
-
-<!-- ═══════════════════════════════════════════════════
-     PREP SCREEN
-═══════════════════════════════════════════════════ -->
-<div class="screen" id="screen-prep">
-
-  <!-- SETTINGS OVERLAY -->
-  <div class="ov" id="sov">
-    <div class="ovpanel">
-      <div class="ovhdr">
-        <div class="ovtitle">⚙ SETUP</div>
-        <button class="cancelbtn" onclick="closeSov()">✕ CLOSE</button>
-      </div>
-      <div style="display:flex;border-bottom:1px solid #2a2a2a;flex-shrink:0;">
-        <button class="ptab" id="ptab-sch" onclick="stab('sch',this)" style="color:#c8a800;border-bottom:2px solid #c8a800;">SCHEDULE</button>
-        <button class="ptab" id="ptab-ros" onclick="stab('ros',this)">ROSTERS</button>
-      </div>
-      <div class="ovbody">
-        <div class="tc on" id="tc-sch">
-          <div style="font-size:10px;color:#444;margin-bottom:10px;line-height:1.7;">Define your classes and assign to A day, B day, or both.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:7px;margin-bottom:5px;">
-            <span style="font-size:9px;color:#333;letter-spacing:1px;">CLASS NAME</span>
-            <span style="font-size:9px;color:#333;letter-spacing:1px;">SUBJECT</span>
-            <span style="font-size:9px;color:#333;letter-spacing:1px;">DAY</span>
-            <span></span>
-          </div>
-          <div id="schrows"></div>
-          <button onclick="addSch()" style="padding:6px;border:1px dashed #2a2a2a;border-radius:3px;background:none;color:#444;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;width:100%;text-align:center;letter-spacing:1px;margin-top:3px;">+ ADD CLASS</button>
-          <button onclick="saveSch()" style="margin-top:10px;padding:7px;border:1px solid #2d8c2d;border-radius:4px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;width:100%;letter-spacing:1px;">✓ SAVE SCHEDULE</button>
+      <!-- PRESENT MODE -->
+      <div class="modearea" id="mode-present">
+        <div class="zone">
+          <div class="zlbl">PRESENTATIONS</div>
+          <div id="pres-list"></div>
         </div>
-        <div class="tc" id="tc-ros">
-          <div style="font-size:10px;color:#444;margin-bottom:9px;line-height:1.7;">Select a class then add students. The <span style="color:#c8a800;font-style:italic;">i</span> button turns amber when requirements are saved.</div>
-          <div id="rclsrow" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;"></div>
-          <div class="rmethods">
-            <div class="rmethod">
-              <div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:6px;">PASTE A LIST</div>
-              <div style="font-size:9px;color:#333;margin-bottom:4px;">One name per line from PowerSchool</div>
-              <textarea class="ta" id="pastea" style="height:75px;" placeholder="Last, First&#10;Last, First..."></textarea>
-              <button onclick="doPaste()" style="margin-top:4px;width:100%;text-align:center;font-size:10px;color:#336;cursor:pointer;padding:3px 8px;border:1px dashed #223;border-radius:3px;background:none;font-family:'Share Tech Mono',monospace;letter-spacing:1px;">↓ IMPORT NAMES</button>
-            </div>
-            <div class="rmethod">
-              <div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:6px;">ADD MANUALLY</div>
-              <div style="font-size:9px;color:#333;margin-bottom:4px;">Type name and press Enter</div>
-              <div style="display:flex;gap:5px;">
-                <input class="inp" id="manname" placeholder="Student name..." style="flex:1;" onkeydown="if(event.key==='Enter')doManual()">
-                <button onclick="doManual()" style="font-size:10px;color:#336;cursor:pointer;padding:2px 7px;border:1px dashed #223;border-radius:3px;background:none;font-family:'Share Tech Mono',monospace;">+ ADD</button>
-              </div>
-              <div style="margin-top:7px;">
-                <button onclick="alert('Google Sheets import — coming when API connected!')" style="width:100%;text-align:center;font-size:10px;color:#444;cursor:pointer;padding:3px 8px;border:1px dashed #2a2a2a;border-radius:3px;background:none;font-family:'Share Tech Mono',monospace;letter-spacing:1px;">⬇ FROM SHEETS</button>
-              </div>
-            </div>
+        <div class="zone">
+          <div class="zlbl">VIDEOS</div>
+          <div id="vid-list"></div>
+        </div>
+        <div class="zone">
+          <div class="zlbl">IMAGE SEARCH</div>
+          <div class="search-row">
+            <input type="text" id="img-search-inp" class="srch-inp" placeholder="search for an image..." onkeydown="if(event.key==='Enter')imgSearch()">
+            <button onclick="imgSearch()" class="srch-btn">SEARCH</button>
           </div>
-          <div class="zone">
-            <div class="zlbl">
-              ROSTER — <span id="rcname" style="color:#c8a800;letter-spacing:0;">SELECT A CLASS</span>
-              &nbsp;<span id="rccount" style="color:#444;font-size:9px;letter-spacing:0;"></span>
-              &nbsp;<span id="rcreqs" style="color:#c8a800;font-size:9px;letter-spacing:0;"></span>
-            </div>
-            <div class="slist" id="slist"><div style="color:#2a2a2a;font-size:10px;text-align:center;padding:8px;">select a class above</div></div>
+        </div>
+        <div class="zone">
+          <div class="zlbl">YOUTUBE SEARCH</div>
+          <div class="search-row">
+            <input type="text" id="yt-search-inp" class="srch-inp" placeholder="search YouTube..." onkeydown="if(event.key==='Enter')ytSearch()">
+            <button onclick="ytSearch()" class="srch-btn">SEARCH</button>
           </div>
-          <button onclick="saveRosterToSheets()" style="margin-top:10px;padding:7px;border:1px solid #2d8c2d;border-radius:4px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;width:100%;letter-spacing:1px;">✓ SAVE ROSTER</button>
+        </div>
+        <div class="zone">
+          <div class="zlbl">QUESTION BANK</div>
+          <textarea class="ta" style="height:80px;" placeholder="Questions to ask during this lesson..."></textarea>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- REQUIREMENTS OVERLAY -->
-  <div class="rov" id="rov">
-    <div class="rpanel">
-      <div style="padding:9px 13px;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;flex-shrink:0;">
-        <div style="font-size:11px;color:#c8a800;letter-spacing:1px;flex:1;" id="rptitle">STUDENT</div>
-        <button class="cancelbtn" onclick="closeReq()">✕</button>
-      </div>
-      <div class="rpbody">
-        <div id="togrow" onclick="toggleReq()" style="display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:4px;background:#151515;margin-bottom:10px;cursor:pointer;border:1px solid #2a2a2a;">
-          <div id="togchk" style="width:13px;height:13px;border:1px solid #444;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;color:#444;"></div>
-          <div id="toglbl" style="font-size:10px;color:#666;">This student has special requirements</div>
+      <!-- WORK MODE -->
+      <div class="modearea" id="mode-work">
+        <div class="timer-bar">
+          <span style="font-size:11px;color:#333;letter-spacing:1px;">TIMER</span>
+          <span class="timer-disp" id="timer-disp">0:00</span>
+          <button id="timer-start-btn" onclick="startTimer()" class="timer-btn">▶ START</button>
+          <button onclick="resetTimer()" class="timer-btn">↺ RESET</button>
         </div>
-        <div id="rdetails" style="display:none;">
-          <div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:5px;">CHECKLIST ITEMS</div>
-          <div style="font-size:9px;color:#333;margin-bottom:6px;">These become checkboxes on the command screen</div>
-          <div id="ritemlist"></div>
-          <div style="display:flex;gap:5px;margin-top:4px;">
-            <input class="inp" id="rnewitem" placeholder="Add requirement..." style="flex:1;font-size:10px;" onkeydown="if(event.key==='Enter')addRI()">
-            <button onclick="addRI()" style="font-size:10px;color:#336;cursor:pointer;padding:2px 7px;border:1px dashed #223;border-radius:3px;background:none;font-family:'Share Tech Mono',monospace;">+ ADD</button>
+        <div class="zone">
+          <div class="zlbl">NOTES</div>
+          <textarea class="ta" style="height:110px;" placeholder="Work session notes..."></textarea>
+        </div>
+      </div>
+
+      <!-- CLOSE MODE -->
+      <div class="modearea" id="mode-close">
+        <div class="zone">
+          <div class="zlbl">SESSION SUMMARY</div>
+          <div class="summary-row">
+            Questions asked: <span class="summary-val" id="close-asked">0</span><br>
+            Students called on: <span class="summary-val" id="close-called">0</span><br>
+            Accommodations logged: <span class="summary-val green" id="close-acc">0</span><br>
+            Behavior notes: <span class="summary-val amber" id="close-beh">0</span>
           </div>
-          <div style="font-size:9px;letter-spacing:2px;color:#444;margin:10px 0 5px;">PRIVATE NOTES</div>
-          <textarea class="ta" id="rnotes" style="height:65px;" placeholder="Private — not shown on command screen..."></textarea>
-          <div style="font-size:9px;color:#333;margin-top:3px;">⚿ Private — setup only</div>
         </div>
-        <button onclick="saveReq()" style="margin-top:10px;padding:6px;border:1px solid #2d8c2d;border-radius:4px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;width:100%;letter-spacing:1px;">✓ SAVE</button>
+        <div class="zone">
+          <div class="zlbl">NEXT CLASS NOTES</div>
+          <textarea class="ta" style="height:70px;" placeholder="Notes for next class..."></textarea>
+        </div>
+        <div class="zone">
+          <div class="zlbl">EXPORT</div>
+          <button onclick="openExport('Accommodations Log')" class="exp-btn">↓ ACCOMMODATIONS LOG</button>
+          <button onclick="openExport('Question Log')" class="exp-btn">↓ QUESTION LOG</button>
+          <button onclick="openExport('Behavior Log')" class="exp-btn">↓ BEHAVIOR LOG</button>
+          <br><br>
+          <div style="display:flex;gap:7px;align-items:center;">
+            <button onclick="document.getElementById('debrief-modal').classList.add('on')" style="padding:4px 10px;border:1px solid #c8a800;border-radius:2px;background:#1a1500;color:#c8a800;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;">+ DEBRIEF NOTE</button>
+            <a href="planning.html" style="padding:4px 10px;border:1px solid #00ccff;border-radius:2px;background:#002a33;color:#00ccff;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;text-decoration:none;">▶ OPEN PLANNING</a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /cc-maini -->
+  </div><!-- /cc-main -->
+
+  <!-- MIDDLE — NOTES/REMINDERS -->
+  <div class="cc-middle">
+    <div class="panel-hdr">NOTES / REMINDERS</div>
+    <div class="panel-body">
+      <div style="font-size:9px;letter-spacing:1px;color:#333;margin-bottom:4px;">REMINDERS FROM PLANNING</div>
+      <div id="rem-list"></div>
+      <div style="font-size:9px;letter-spacing:1px;color:#333;margin:9px 0 4px;">SESSION NOTES</div>
+      <textarea class="ta" style="height:130px;" placeholder="notes..."></textarea>
+    </div>
+  </div>
+
+  <!-- SIDEBAR — STATUS BOARD -->
+  <div class="cc-sidebar">
+    <div class="panel-hdr" id="sb-header">STATUS BOARD</div>
+    <div class="panel-body">
+      <div class="sbgrid" id="sb-grid"></div>
+      <div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:4px;">
+        <span style="font-size:9px;color:#00ccff;">■ strong</span>
+        <span style="font-size:9px;color:#4db84d;">■ good</span>
+        <span style="font-size:9px;color:#c8a800;">■ mixed</span>
+        <span style="font-size:9px;color:#d4720a;">■ struggling</span>
+        <span style="font-size:9px;color:#c03030;">■ needs help</span>
       </div>
     </div>
   </div>
 
-  <!-- PREP HEADER -->
-  <div class="ps-hdr">
-    <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:600;color:#00ccff;letter-spacing:2px;">LESSON PREP</div>
-    <div style="font-size:13px;color:#555;">TODAY: <span style="color:#aaa;" id="prep-date"></span></div>
-    <div class="abtog">
-      <button id="prep-abtn-A" onclick="setPrepDay(prepDay==='A'?'B':'A')" style="padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;border:none;letter-spacing:1px;">A DAY</button>
-      <button id="prep-abtn-B" onclick="setPrepDay(prepDay==='B'?'A':'B')" style="padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;border:none;letter-spacing:1px;">B DAY</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <span style="font-size:11px;color:#444;letter-spacing:1px;">ACTIVE:</span>
-      <span style="font-size:13px;color:#00ccff;" id="prep-aplbl">—</span>
-    </div>
-    <button onclick="showScreen('cc')" style="padding:5px 14px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;letter-spacing:1px;border:1px solid #c8a800;background:#1a1500;color:#c8a800;">COMM CTR</button>
-    <button onclick="openSov()" style="margin-left:auto;padding:5px 13px;border:1px solid #2a2a2a;border-radius:3px;background:#151515;color:#888;font-family:'Share Tech Mono',monospace;font-size:16px;cursor:pointer;">⚙</button>
+</div><!-- /cc-body -->
+
+<!-- ══ BOTTOM — ACCOMMODATIONS ════════════════════════ -->
+<div class="cc-bottom">
+  <div class="bthdr">
+    <span>ACCOMMODATIONS</span>
+    <span style="color:#333;font-size:9px;" id="acc-count"></span>
   </div>
-
-  <!-- PREP BODY -->
-  <div class="ps-body">
-
-    <!-- LEFT — period list -->
-    <div class="ps-left">
-      <div class="panel-hdr">TODAY'S CLASSES</div>
-      <div style="padding:6px;" id="prep-plist"></div>
-      <div style="flex:1;"></div>
-      <button onclick="alert('Loaded to Comm Center!')" style="margin:8px;padding:8px;border:1px solid #2d8c2d;border-radius:4px;background:#0a1f0a;color:#4db84d;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;text-align:center;letter-spacing:1px;">▶ LOAD TO COMM CTR</button>
-    </div>
-
-    <!-- MID — lesson editor -->
-    <div class="ps-mid">
-      <div class="ps-mid-hdr">
-        <div style="font-size:13px;color:#aaa;letter-spacing:1px;flex:1;" id="etitle">SELECT A CLASS OR LESSON</div>
-        <button onclick="alert('Copy from last delivery')" style="font-size:12px;color:#336;cursor:pointer;border:1px solid #223;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">↩ COPY LAST</button>
-        <button id="save-lesson-btn" onclick="saveCurrentLesson()" style="font-size:12px;color:#4db84d;cursor:pointer;border:1px solid #224422;border-radius:2px;padding:3px 8px;background:none;font-family:'Share Tech Mono',monospace;">✓ SAVE</button>
-      </div>
-      <div class="ps-mid-body" id="ebody">
-        <div style="color:#2a2a2a;font-size:11px;text-align:center;margin-top:50px;letter-spacing:2px;">SELECT A CLASS OR LESSON FROM LIBRARY</div>
-      </div>
-    </div>
-
-    <!-- RIGHT — lesson library -->
-    <div class="ps-right">
-      <div class="panel-hdr">LESSON LIBRARY</div>
-      <div style="padding:5px 6px;border-bottom:1px solid #1a1a1a;">
-        <input class="inp" style="font-size:13px;padding:5px 8px;" placeholder="search lessons...">
-      </div>
-      <div class="panel-body" id="lbody"></div>
-      <button onclick="newLesson()" style="margin:6px;padding:6px;border:1px dashed #2a2a2a;border-radius:3px;background:none;color:#444;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;text-align:center;">+ NEW LESSON</button>
-    </div>
-
+  <div id="bt-compact" style="padding:5px 9px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+    <div id="sn-compact-btns" style="display:flex;gap:4px;flex-wrap:wrap;flex:1;"></div>
+    <button onclick="pickStudent()" style="padding:5px 13px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;border:1px solid #00ccff;background:#002a33;color:#00ccff;letter-spacing:1px;">PICK STUDENT</button>
   </div>
-</div><!-- end screen-prep -->
+  <div id="sn-expanded" style="display:none;padding:7px 11px;gap:7px;align-items:flex-start;flex-wrap:wrap;">
+    <div id="sn-expanded-btns" style="display:flex;gap:7px;flex-wrap:wrap;flex:1;align-items:flex-start;"></div>
+    <button onclick="pickStudent()" style="padding:5px 13px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;border:1px solid #00ccff;background:#002a33;color:#00ccff;letter-spacing:1px;margin-top:3px;">PICK STUDENT</button>
+  </div>
+</div>
 
+<!-- ══ STATUS BAR ═════════════════════════════════════ -->
+<div class="statusbar">
+  <span id="status-msg">READY</span>
+  <span style="color:#1a1a1a;">CLASS COMM v3.0</span>
+</div>
 
 <script>
-// ══════════════════════════════════════════════════════
-// DIRTY STATE TRACKING (must be at top)
-// ══════════════════════════════════════════════════════
-var lessonDirty = false;
-
-function markDirty() {
-  if (lessonDirty) return;
-  lessonDirty = true;
-  var btn = document.getElementById('save-lesson-btn');
-  if (btn) {
-    btn.style.borderColor = '#ff6600';
-    btn.style.color = '#ff6600';
-    btn.textContent = '● SAVE';
-  }
-}
-
-function clearDirty() {
-  lessonDirty = false;
-  var btn = document.getElementById('save-lesson-btn');
-  if (btn) {
-    btn.style.borderColor = '#224422';
-    btn.style.color = '#4db84d';
-    btn.textContent = '✓ SAVE';
-  }
-}
-
-// Warn before closing browser/tab with unsaved changes
-window.addEventListener('beforeunload', function(e) {
-  if (lessonDirty) {
-    e.preventDefault();
-    e.returnValue = 'You have unsaved lesson changes.';
-    return e.returnValue;
-  }
-});
-
-// ══════════════════════════════════════════════════════
-// GOOGLE SHEETS INTEGRATION
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// CONFIG — UPDATE THIS TO YOUR DEPLOYED SCRIPT URL
+// ══════════════════════════════════════════════════
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7IKheLtXlVgJznD33z92DHp6iC5ql0KSY8ALwfS_gjaUO2EHdsEIv_QIAf1nbpE88VA/exec';
 
-function showStatus(msg, color) {
-  var el = document.getElementById('sheets-status');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'sheets-status';
-    el.style.cssText = 'position:fixed;bottom:10px;right:10px;padding:8px 14px;border-radius:6px;font-family:monospace;font-size:12px;z-index:9999;max-width:400px;word-break:break-all;';
-    document.body.appendChild(el);
-  }
-  el.style.background = color || '#1a3a1a';
-  el.style.border = '1px solid ' + (color ? '#c03030' : '#4db84d');
-  el.style.color = color ? '#e05050' : '#4db84d';
+// ══════════════════════════════════════════════════
+// SCHEDULE — defined by class IDs, not array indices
+// Loaded from Sheets on boot; fallback shown here
+// ══════════════════════════════════════════════════
+var SCHEDULE = [
+  { classId:'cls_p1_a',  name:'UAS',          sub:'Unmanned Aerial Systems', day:'A', period:'P1' },
+  { classId:'cls_p2_a',  name:'Intro RC',      sub:'Intro to RC',             day:'A', period:'P2' },
+  { classId:'cls_p3_a',  name:'UAS Innov.',    sub:'UAS Innovations',         day:'A', period:'P3' },
+  { classId:'cls_p5_s1', name:'Intro Avn S1',  sub:'Intro to Aviation',       day:'B', period:'P5' },
+  { classId:'cls_p7_b',  name:'UAS',           sub:'Unmanned Aerial Systems', day:'B', period:'P7' },
+];
+
+// ══════════════════════════════════════════════════
+// STATE — keyed by classId, never by index
+// ══════════════════════════════════════════════════
+var state = {
+  curDay:    'A',
+  curClassId: 'cls_p1_a',
+  curMode:   'start',
+  activeStudentIdx: null,
+  snActiveIdx: null,
+  pickQueue: [], curPickIdx: 0,
+  timerSecs: 0, timerRunning: false, timerInt: null,
+  exportType: '',
+};
+
+// Per-class data — keyed by classId
+var classData = {};   // { classId: { lesson, students, history, behavior, sn } }
+
+function emptyClassData() {
+  return { lesson: null, students: [], history: {}, behavior: {}, sn: [] };
+}
+
+function getCD(classId) {
+  if (!classData[classId]) classData[classId] = emptyClassData();
+  return classData[classId];
+}
+
+// ══════════════════════════════════════════════════
+// SHEETS API
+// ══════════════════════════════════════════════════
+function showStatus(msg, isErr) {
+  var el = document.getElementById('status-msg');
   el.textContent = msg;
-  clearTimeout(el._timer);
-  if (!color) el._timer = setTimeout(function(){ el.style.display='none'; }, 3000);
+  el.className = isErr ? 'status-err' : (msg === 'READY' ? '' : 'status-ok');
 }
 
 function sheetsGet(params) {
   var url = SCRIPT_URL + '?' + Object.keys(params).map(function(k) {
     return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
   }).join('&');
-  showStatus('Connecting to Sheets: ' + params.action + '...');
-  return fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-    if (data.error) { showStatus('Sheets error: ' + data.error, '#3a0a0a'); }
-    else { showStatus('Sheets OK: ' + params.action); }
-    return data;
-  }).catch(function(e) {
-    showStatus('Fetch failed: ' + e.toString(), '#3a0a0a');
-    throw e;
+  return fetch(url).then(function(r) { return r.json(); }).catch(function(e) {
+    showStatus('Network error', true); throw e;
   });
 }
 
 function sheetsPost(data) {
-  showStatus('Saving to Sheets: ' + data.action + '...');
-  return fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }).then(function(r) { return r.json(); }).then(function(res) {
-    if (res.error) {
-      showStatus('Sheets POST error: ' + res.error, '#3a0a0a');
-    } else {
-      showStatus('Sheets POST OK: ' + data.action);
-    }
-    console.log('sheetsPost response:', data.action, res);
-    return res;
-  }).catch(function(e) {
-    showStatus('Sheets POST failed: ' + e.toString(), '#3a0a0a');
-    console.error('sheetsPost error:', e);
-    throw e;
-  });
+  return fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify(data) })
+    .then(function(r) { return r.json(); })
+    .catch(function(e) { showStatus('Save failed', true); throw e; });
 }
 
-// Central refresh — call after any Sheets data arrives
-function refreshAllScreens() {
-  loadClassData();
-  buildSidebar();
-  buildSNCompact();
-  buildLib();
-  buildPrepPlist();
-  buildRosCls();
-  buildSlist();
-  if(lessons.length){ loadEd(lessons[0].id); }
-}
-
-// Manual refresh button — added to nav bar
-function manualRefresh() {
-  showStatus('Refreshing data from Google Sheets...');
-  var period = schedule[curClsIdx] && schedule[curClsIdx].period;
-  if(!period){ showStatus('No period found for current class', '#3a0a0a'); return; }
-  Promise.all([
-    new Promise(function(resolve){
-      sheetsGet({action:'getRoster', period:period}).then(function(res){
-        if(res.error || !res.students){ resolve(); return; }
-        var idx = schedule.findIndex(function(s){ return s.period === period; });
-        if(idx < 0){ resolve(); return; }
-        ros[idx] = res.students.map(function(s){
-          var accStr=s.accommodations||'';
-          var parts=accStr.split(' | ');
-          var items=parts[0]?parts[0].split('; ').filter(Boolean):[];
-          return{name:s.firstName+' '+s.lastName,id:s.id,accommodations:accStr,reqs:!!(accStr),items:items,notes:parts[1]||''};
-        });
-        classData[idx].students = ros[idx].map(function(s){ return s.name; });
-        classData[idx].sn = ros[idx].filter(function(s){ return s.reqs; }).map(function(s){
-          // Split accommodations into separate items
-          var accParts = (s.accommodations || '').split(' | ');
-          var itemsStr = accParts[0] || '';
-          var itemsArr = itemsStr.split('; ').filter(Boolean).map(function(item){
-            return { text: item.trim(), done: false };
-          });
-          if (!itemsArr.length && s.accommodations) {
-            itemsArr = [{ text: s.accommodations, done: false }];
-          }
-          return{name:s.name,done:false,items:itemsArr};
-        });
-        resolve();
-      }).catch(resolve);
-    }),
-    new Promise(function(resolve){
-      sheetsGet({action:'getLessons', period:period}).then(function(res){
-        if(res.error || !res.lessons){ resolve(); return; }
-        lessons = res.lessons.map(function(l){
-          // Parse reminders - handle string, array, or empty
-          var parsedRems = [];
-          if (Array.isArray(l.reminders)) {
-            parsedRems = l.reminders;
-          } else if (typeof l.reminders === 'string' && l.reminders.trim()) {
-            try {
-              parsedRems = JSON.parse(l.reminders);
-              if (!Array.isArray(parsedRems)) parsedRems = [parsedRems];
-            } catch(e) {
-              parsedRems = [l.reminders];
-            }
-          }
-          return{id:l.id,unit:l.unit||'Uncategorized',name:l.title||l.name||'Untitled',multi:false,
-            qotd:l.qotd||'',agenda:Array.isArray(l.agenda)?l.agenda:[],
-            pres:Array.isArray(l.presentations)?l.presentations.map(function(p){return{l:p.label||p.l||'',url:p.url||'',t:'slides'};}): [],
-            vids:Array.isArray(l.videos)?l.videos.map(function(v){return{l:v.label||v.l||'',url:v.url||'',t:'yt'};}): [],
-            rems:parsedRems,debrief:[],imageUrl:l.imageUrl||''};
-        });
-        // Push lesson data into classData so Comm Center shows it
-        var cidx = schedule.findIndex(function(s){ return s.period === period; });
-        if(cidx >= 0 && lessons.length){
-          var fl = lessons[0];
-          classData[cidx].qotd   = fl.qotd   || '';
-          classData[cidx].agenda = fl.agenda  || [];
-          classData[cidx].pres   = fl.pres    || [];
-          classData[cidx].vids   = fl.vids    || [];
-          classData[cidx].rems   = fl.rems    || [];
-        }
-        resolve();
-      }).catch(resolve);
-    })
-  ]).then(function(){
-    refreshAllScreens();
-    showStatus('Data refreshed successfully');
-  });
-}
-
-function loadScheduleFromSheets() {
-  return sheetsGet({ action: 'getSchedule' }).then(function(res) {
-    if (res.error) { console.warn('Schedule:', res.error); return; }
-    schedule = res.schedule.map(function(s) {
-      return { name: s.className, sub: s.subject, day: s.day, period: s.period };
-    });
-    buildClsBtns();
-    setDay(curDay);
-  }).catch(function(e) { console.warn('Sheets unreachable', e); });
-}
-
-function loadRosterFromSheets(period) {
-  sheetsGet({ action: 'getRoster', period: period }).then(function(res) {
-    if (res.error) { showStatus('Roster error: ' + res.error, '#3a0a0a'); return; }
-    // Find which index in schedule matches this period
-    var idx = schedule.findIndex(function(s){ return s.period === period; });
-    if(idx < 0){ showStatus('No schedule slot for period ' + period, '#3a0a0a'); return; }
-    // Store in ros
-    ros[idx] = res.students.map(function(s) {
-      var accStr = s.accommodations || '';
-      var parts = accStr.split(' | ');
-      var itemStr = parts[0] || '';
-      var notes = parts[1] || '';
-      var items = itemStr ? itemStr.split('; ').filter(Boolean) : [];
-      return {
-        name: s.firstName + ' ' + s.lastName,
-        id: s.id,
-        accommodations: accStr,
-        reqs: !!(accStr),
-        items: items,
-        notes: notes
-      };
-    });
-    // Update classData students so Comm Center shows them
-    classData[idx].students = ros[idx].map(function(s){ return s.name; });
-    console.log('classData['+idx+'].students set to', classData[idx].students);
-    classData[idx].sn = ros[idx].filter(function(s){ return s.reqs; }).map(function(s){
-      // Split accommodations into separate items - they're stored as "item1; item2; item3 | notes"
-      var accParts = (s.accommodations || '').split(' | ');
-      var itemsStr = accParts[0] || '';
-      var itemsArr = itemsStr.split('; ').filter(Boolean).map(function(item){
-        return { text: item.trim(), done: false };
-      });
-      // If no items parsed, create one from the whole string
-      if (!itemsArr.length && s.accommodations) {
-        itemsArr = [{ text: s.accommodations, done: false }];
-      }
-      return { name: s.name, done: false, items: itemsArr };
-    });
-    // Refresh display if this is the active class
-    if(idx === curClsIdx){ refreshAllScreens(); }
-    var firstStudent = res.students[0] ? (res.students[0].firstName + ' ' + res.students[0].lastName) : 'none';
-    showStatus('Roster loaded: ' + res.students.length + ' students for ' + period + ' | idx=' + idx + ' curClsIdx=' + curClsIdx + ' | first: ' + firstStudent);
-    // Now load question history for this class
-    loadQuestionHistoryFromSheets(period);
-  }).catch(function(e) { showStatus('Roster fetch failed: ' + e.toString(), '#3a0a0a'); });
-}
-
-function loadQuestionHistoryFromSheets(period) {
-  sheetsGet({ action: 'getQuestionHistory', period: period }).then(function(res) {
-    if (res.error) { console.warn('Question history error:', res.error); return; }
-    if (!res.history) { console.log('No question history for', period); return; }
-    
-    var idx = schedule.findIndex(function(s){ return s.period === period; });
-    if (idx < 0) return;
-    
-    // Map student names to their index in the students array
-    var students = classData[idx].students || [];
-    var history = res.history; // { "Student Name": ["g", "y", "r", ...], ... }
-    
-    // Initialize history object if needed
-    if (!classData[idx].history) classData[idx].history = {};
-    
-    // For each student, find their history by name
-    students.forEach(function(name, studentIdx) {
-      if (history[name] && history[name].length > 0) {
-        classData[idx].history[studentIdx] = history[name];
-      }
-    });
-    
-    console.log('Loaded question history for', period, ':', classData[idx].history);
-    showStatus('Question history loaded for ' + period);
-    
-    // Rebuild sidebar to show updated tiers
-    if (idx === curClsIdx) {
-      buildSidebar();
-    }
-  }).catch(function(e) { console.warn('Question history fetch failed:', e); });
-}
-
-function loadLessonsFromSheets(period) {
-  console.log('loadLessonsFromSheets called for period:', period);
-  
-  // Check if we should skip this reload (recently saved)
-  if (!canReloadFromSheets()) {
-    showStatus('Using local data (recently saved)');
-    return;
-  }
-  
-  showStatus('Fetching lessons for ' + period + '...');
-  
-  sheetsGet({ action: 'getLessons', period: period }).then(function(res) {
-    // Double-check we haven't saved while waiting for response
-    if (!canReloadFromSheets()) {
-      console.log('Discarding stale Sheets response - saved while waiting');
-      return;
-    }
-    
-    console.log('loadLessonsFromSheets response for', period, ':', res);
-    if (res.error) { showStatus('Lessons error: ' + res.error, '#3a0a0a'); return; }
-    if (!res.lessons || !res.lessons.length) { 
-      showStatus('No lessons found for ' + period + ' - check Sheets'); 
-      console.warn('No lessons returned for', period, '- response was:', res);
-      buildLib(); 
-      return; 
-    }
-    // Remap Sheets field names to app field names
-    lessons = res.lessons.map(function(l) {
-      // Debug: log what reminders looks like from Sheets
-      console.log('Raw lesson from Sheets:', l.title, '| reminders type:', typeof l.reminders, '| value:', l.reminders);
-      
-      // Parse reminders - handle string, array, or empty
-      var parsedRems = [];
-      if (Array.isArray(l.reminders)) {
-        parsedRems = l.reminders;
-      } else if (typeof l.reminders === 'string' && l.reminders.trim()) {
-        // Try to parse as JSON first
-        try {
-          parsedRems = JSON.parse(l.reminders);
-          if (!Array.isArray(parsedRems)) parsedRems = [parsedRems];
-        } catch(e) {
-          // Not JSON, treat as single reminder string
-          parsedRems = [l.reminders];
-        }
-      }
-      console.log('Parsed reminders:', parsedRems);
-      
-      return {
-        id:      l.id,
-        periods: l.periods || '',
-        unit:    l.unit    || 'Uncategorized',
-        name:    l.title   || l.name || 'Untitled',
-        multi:   false,
-        qotd:    l.qotd    || '',
-        agenda:  Array.isArray(l.agenda)        ? l.agenda        : [],
-        pres:    Array.isArray(l.presentations) ? l.presentations.map(function(p){ return {l: p.label||p.l||'', url: p.url||'', t:'slides'}; }) : [],
-        vids:    Array.isArray(l.videos)        ? l.videos.map(function(v){ return {l: v.label||v.l||'', url: v.url||'', t:'yt'}; }) : [],
-        rems:    parsedRems,
-        debrief: [],
-        imageUrl: l.imageUrl || ''
-      };
-    });
-    showStatus('Loaded ' + lessons.length + ' lessons for ' + period);
-    console.log('Parsed lessons:', lessons);
-    // Push first lesson data into classData for Comm Center display
-    var idx = schedule.findIndex(function(s){ return s.period === period; });
-    console.log('Found schedule index', idx, 'for period', period);
-    if(idx >= 0 && lessons.length){
-      var l = lessons[0];
-      classData[idx].qotd    = l.qotd    || '';
-      classData[idx].agenda  = l.agenda  || [];
-      classData[idx].pres    = l.pres    || [];
-      classData[idx].vids    = l.vids    || [];
-      classData[idx].rems    = l.rems    || [];
-      console.log('Updated classData['+idx+']:', classData[idx]);
-    }
-    refreshAllScreens();
-  }).catch(function(e) { 
-    showStatus('Lessons fetch failed: ' + e, '#3a0a0a'); 
-    console.error('Lessons fetch error:', e);
-  });
-}
-
-// Force reload - bypasses all protection
-function forceReloadLessons() {
-  lastSaveTime = 0; // Clear protection
-  var period = schedule[curClsIdx] && schedule[curClsIdx].period;
-  if (period) {
-    showStatus('Force reloading lessons for ' + period + '...');
-    loadLessonsFromSheets(period);
-  } else {
-    showStatus('No period found for current class', '#3a0a0a');
-  }
-}
-
-function saveLessonToSheets(d) {
-  return sheetsPost({ action: 'saveLesson', data: d });
-}
-
-function logQuestionToSheets(period, student, question, result, score) {
-  var today = new Date().toLocaleDateString('en-US');
-  sheetsPost({ action: 'logQuestion', data: {
-    date: today, period: period,
-    studentId: student.id || '', studentName: student.name,
-    question: question || '', result: result, score: score
-  }}).catch(function(e) { console.warn(e); });
-}
-
-function logSessionToSheets(period, studentName, studentId, eventType, note) {
-  var today = new Date().toLocaleDateString('en-US');
-  sheetsPost({ action: 'logSession', data: {
-    date: today, period: period,
-    studentId: studentId || '', studentName: studentName || '',
-    eventType: eventType, note: note || ''
-  }}).catch(function(e) { console.warn(e); });
-}
-
-// SHARED DATA
-// ══════════════════════════════════════════════════════
-// Your real schedule — loaded from Google Sheets on startup
-var schedule=[
-  {name:'UAS',          sub:'Unmanned Aerial Systems', day:'A', period:'P1'},
-  {name:'Intro to RC',  sub:'Intro to RC',             day:'A', period:'P2'},
-  {name:'UAS Innov.',   sub:'UAS Innovations',         day:'A', period:'P3'},
-  {name:'Intro to Avn', sub:'Intro to Aviation',       day:'B', period:'P5'},
-  {name:'UAS',          sub:'Unmanned Aerial Systems', day:'B', period:'P7'}
-];
-
-// Lessons — loaded from Google Sheets when a class is selected
-var lessons=[];
-
-// Class data — populated from Sheets; empty shells here so app doesn't crash before load
-function emptyClass(){return{qotd:'',agenda:[],pres:[],vids:[],rems:[],students:[],history:{},behavior:{},sn:[]};}
-var classData={0:emptyClass(),1:emptyClass(),2:emptyClass(),3:emptyClass(),4:emptyClass()};
-
-// Rosters — loaded from Google Sheets when a class is selected
-var ros={0:[],1:[],2:[],3:[],4:[]};
-
-// ══════════════════════════════════════════════════════
-// SHARED STATE
-// ══════════════════════════════════════════════════════
-var curDay='A',curClsIdx=0,curMode='start',activeIdx=null,snActiveIdx=null;
-var timerSecs=0,timerRunning=false,timerInt=null;
-var pickQueue=[],curPickIdx=0;
-var prepDay='A',prepPer=0,curLes=1,curRosCls=0;
-var reqIdx=null,reqDraft={reqs:false,items:[],notes:''};
-var exportType='';
-
-// Time-based protection: don't reload from Sheets if we saved recently
-var lastSaveTime = 0;
-var SAVE_PROTECTION_MS = 15000; // 15 seconds
-
-function canReloadFromSheets() {
-  var timeSinceSave = Date.now() - lastSaveTime;
-  if (timeSinceSave < SAVE_PROTECTION_MS) {
-    console.log('Skipping Sheets reload - saved ' + Math.round(timeSinceSave/1000) + 's ago');
-    return false;
-  }
-  return true;
-}
-
-// ══════════════════════════════════════════════════════
-// SCREEN NAV
-// ══════════════════════════════════════════════════════
-function showScreen(id){
-  if(lessonDirty && document.getElementById('screen-prep').classList.contains('active') && id !== 'prep'){
-    if(!confirm('You have unsaved lesson changes. Leave anyway?')){
-      return;
-    }
-    clearDirty();
-  }
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
-  document.getElementById('screen-'+id).classList.add('active');
-  var nb=document.getElementById('nav-'+id);
-  if(nb) nb.classList.add('active');
-}
-
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // CLOCK
-// ══════════════════════════════════════════════════════
-function updateClock(){
-  var now=new Date(),h=now.getHours(),m=now.getMinutes(),ap=h>=12?'PM':'AM';
-  h=h%12||12;
-  var t=h+':'+(m<10?'0':'')+m+' '+ap;
-  document.getElementById('main-clock').textContent=t;
-  document.getElementById('cc-clock').textContent=t;
+// ══════════════════════════════════════════════════
+function pad(n) { return n < 10 ? '0' + n : n; }
+function updateClock() {
+  var now = new Date(), h = now.getHours(), m = now.getMinutes();
+  var ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+  var t = h12 + ':' + pad(m) + ' ' + ap;
+  document.getElementById('main-clock').textContent = t;
 }
-updateClock();setInterval(updateClock,15000);
+updateClock(); setInterval(updateClock, 15000);
 
-// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // STYLE HELPERS
-// ══════════════════════════════════════════════════════
-function styleAbtn(id,active){var el=document.getElementById(id);if(!el)return;el.style.background=active?'#003a4a':'#1a1a1a';el.style.color=active?'#00ccff':'#888';}
-function styleModeBtn(el,active){el.style.background=active?'#1a1a00':'#151515';el.style.borderColor=active?'#c8a800':'#2a2a2a';el.style.color=active?'#c8a800':'#888';}
-function styleClsBtn(el,active){el.style.background=active?'#1a1500':'#151515';el.style.border='1px solid '+(active?'#c8a800':'#2a2a2a');el.style.color=active?'#c8a800':'#888';}
-function styleDtag(el,d,schDay){var hasA=(schDay==='A'||schDay==='AB'),hasB=(schDay==='B'||schDay==='AB'),active=(d==='A'&&hasA)||(d==='B'&&hasB);el.style.fontFamily="'Share Tech Mono',monospace";el.style.fontSize='13px';el.style.letterSpacing='1px';el.style.cursor='pointer';el.style.padding='5px 14px';el.style.borderRadius='3px';if(active){if(d==='A'){el.style.background='#003a4a';el.style.border='1px solid #00ccff';el.style.color='#00ccff';}else{el.style.background='#1a1500';el.style.border='1px solid #c8a800';el.style.color='#c8a800';}}else{el.style.background='#1a1a1a';el.style.border='1px solid #2a2a2a';el.style.color='#444';}}
-function styleIbtn(el,hasReqs){el.style.fontFamily="'Share Tech Mono',monospace";el.style.fontSize='12px';el.style.fontStyle='italic';el.style.cursor='pointer';el.style.padding='3px 11px';el.style.borderRadius='3px';el.style.letterSpacing='1px';if(hasReqs){el.style.border='1px solid #c8a800';el.style.background='#1a1500';el.style.color='#c8a800';}else{el.style.border='1px solid #2a2a2a';el.style.background='#1a1a1a';el.style.color='#444';}}
+// ══════════════════════════════════════════════════
+function styleAbtn(id, active) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.background = active ? '#003a4a' : '#1a1a1a';
+  el.style.color       = active ? '#00ccff' : '#666';
+}
+function styleClsBtn(el, active) {
+  el.style.background  = active ? '#1a1500' : '#151515';
+  el.style.border      = '1px solid ' + (active ? '#c8a800' : '#2a2a2a');
+  el.style.color       = active ? '#c8a800' : '#666';
+}
+function styleModeBtn(el, active) {
+  el.style.background  = active ? '#1a1a00' : '#151515';
+  el.style.borderColor = active ? '#c8a800' : '#2a2a2a';
+  el.style.color       = active ? '#c8a800' : '#666';
+}
 
-// ══════════════════════════════════════════════════════
-// COMM CENTER
-// ══════════════════════════════════════════════════════
-styleAbtn('abtn-A',true);styleAbtn('abtn-B',false);
+// ══════════════════════════════════════════════════
+// DAY & CLASS SWITCHING
+// ══════════════════════════════════════════════════
+function setDay(d) {
+  state.curDay = d;
+  styleAbtn('abtn-A', d === 'A');
+  styleAbtn('abtn-B', d === 'B');
+  buildClsBtns();
+  // Auto-select first class for this day
+  var active = getActivePeriods();
+  if (active.length) switchClass(active[0].classId);
+}
 
-var modeDefs=[{id:'start',label:'▶ START'},{id:'present',label:'⬛ PRESENT'},{id:'work',label:'✎ WORK'},{id:'close',label:'■ CLOSE'}];
-modeDefs.forEach(function(m){
-  var b=document.createElement('button');
-  b.style.cssText='padding:5px 13px;font-family:"Share Tech Mono",monospace;font-size:13px;letter-spacing:1px;border:1px solid #2a2a2a;border-radius:3px;cursor:pointer;white-space:nowrap;background:#151515;color:#888;';
-  b.textContent=m.label;styleModeBtn(b,m.id==='start');b.id='mbtn-'+m.id;
-  (function(mid){b.onclick=function(){setMode(mid);};})(m.id);
+function getActivePeriods() {
+  return SCHEDULE.filter(function(s) { return s.day === state.curDay || s.day === 'AB'; });
+}
+
+function buildClsBtns() {
+  var el = document.getElementById('cls-btns');
+  el.innerHTML = '';
+  getActivePeriods().forEach(function(s) {
+    var b = document.createElement('button');
+    b.style.cssText = 'padding:3px 10px;font-family:"Share Tech Mono",monospace;font-size:11px;border-radius:2px;cursor:pointer;letter-spacing:1px;white-space:nowrap;';
+    b.textContent = s.name + ' — ' + s.period;
+    styleClsBtn(b, s.classId === state.curClassId);
+    b.id = 'clsbtn-' + s.classId;
+    (function(cid) { b.onclick = function() { switchClass(cid); }; })(s.classId);
+    el.appendChild(b);
+  });
+}
+
+function switchClass(classId) {
+  state.curClassId = classId;
+  // Update button styles
+  getActivePeriods().forEach(function(s) {
+    var b = document.getElementById('clsbtn-' + s.classId);
+    if (b) styleClsBtn(b, s.classId === classId);
+  });
+  loadClassFromSheets(classId);
+}
+
+// ══════════════════════════════════════════════════
+// LOAD CLASS DATA FROM SHEETS
+// ══════════════════════════════════════════════════
+function loadClassFromSheets(classId) {
+  showStatus('Loading ' + classId + '...');
+  // Load in parallel: latest push + roster + question history
+  Promise.all([
+    loadLatestPush(classId),
+    loadRoster(classId),
+    loadQuestionHistory(classId),
+  ]).then(function() {
+    renderClass(classId);
+    showStatus('READY');
+  }).catch(function(e) {
+    showStatus('Load error', true);
+    renderClass(classId);
+  });
+}
+
+function loadLatestPush(classId) {
+  return sheetsGet({ action:'getLatestPush', class_id: classId }).then(function(res) {
+    var cd = getCD(classId);
+    if (res.error || !res.push) {
+      cd.lesson = null;
+      return;
+    }
+    var snap = res.push.snapshot;
+    if (typeof snap === 'string') { try { snap = JSON.parse(snap); } catch(e) { snap = null; } }
+    cd.lesson = snap;
+    cd.pushedAt = res.push.pushed_at;
+  }).catch(function() { getCD(classId).lesson = null; });
+}
+
+function loadRoster(classId) {
+  return sheetsGet({ action:'getRoster', class_id: classId }).then(function(res) {
+    var cd = getCD(classId);
+    if (res.error || !res.students) { cd.students = []; cd.sn = []; return; }
+    cd.students = res.students.map(function(s) {
+      return s.display_name || ((s.first_name || '') + ' ' + (s.last_name || '')).trim();
+    });
+    cd.sn = res.students.filter(function(s) { return s.accommodations || (s.acc_items && s.acc_items.length); }).map(function(s) {
+      var items = s.acc_items && s.acc_items.length ? s.acc_items :
+        (s.accommodations || '').split('|')[0].split(';').map(function(x) { return x.trim(); }).filter(Boolean);
+      return {
+        name: s.display_name || ((s.first_name || '') + ' ' + (s.last_name || '')).trim(),
+        done: false,
+        items: items.map(function(t) { return { text: t, done: false }; })
+      };
+    });
+  }).catch(function() { var cd = getCD(classId); cd.students = []; cd.sn = []; });
+}
+
+function loadQuestionHistory(classId) {
+  return sheetsGet({ action:'getQuestionHistory', class_id: classId }).then(function(res) {
+    var cd = getCD(classId);
+    if (res.error || !res.history) { cd.history = {}; return; }
+    cd.history = {};
+    var students = cd.students || [];
+    students.forEach(function(name, idx) {
+      if (res.history[name]) cd.history[idx] = res.history[name];
+    });
+  }).catch(function() { getCD(classId).history = {}; });
+}
+
+// ══════════════════════════════════════════════════
+// RENDER CLASS
+// ══════════════════════════════════════════════════
+function renderClass(classId) {
+  var cd  = getCD(classId);
+  var sch = SCHEDULE.find(function(s) { return s.classId === classId; }) || {};
+
+  // Update push indicator
+  updatePushIndicator(cd);
+
+  // Status board header
+  document.getElementById('sb-header').textContent = 'STATUS BOARD — ' + (sch.name || classId);
+
+  // Agenda + QOTD from pushed lesson
+  var lesson = cd.lesson;
+  if (lesson) {
+    var agenda = lesson.agenda || [];
+    document.getElementById('agenda-display').innerHTML = agenda.length
+      ? agenda.map(function(a, i) { return '<div class="agenda-item"><span class="agenda-num">' + String(i+1).padStart(2,'0') + '</span>' + a + '</div>'; }).join('')
+      : '<div style="color:#2a2a2a;font-size:11px;letter-spacing:2px;">NO AGENDA ITEMS</div>';
+    document.getElementById('qotd-display').textContent = lesson.qotd || '—';
+
+    // Presentations
+    var pl = document.getElementById('pres-list');
+    pl.innerHTML = '';
+    (lesson.presentations || []).forEach(function(p, i) {
+      var b = document.createElement('button');
+      b.className = 'pres-btn ' + (i === 0 ? 'primary' : 'secondary');
+      b.textContent = '▶ ' + (p.l || p.label || 'Presentation');
+      b.onclick = function() { if (p.url) window.open(p.url, '_blank'); };
+      pl.appendChild(b);
+    });
+    if (!lesson.presentations || !lesson.presentations.length) {
+      pl.innerHTML = '<div style="font-size:11px;color:#2a2a2a;letter-spacing:1px;">NO PRESENTATIONS LOADED</div>';
+    }
+
+    // Videos
+    var vl = document.getElementById('vid-list');
+    vl.innerHTML = '';
+    (lesson.videos || []).forEach(function(v) {
+      var b = document.createElement('button');
+      b.className = 'pres-btn secondary';
+      b.textContent = '▶ ' + (v.l || v.label || 'Video');
+      b.onclick = function() { if (v.url) window.open(v.url, '_blank'); };
+      vl.appendChild(b);
+    });
+    if (!lesson.videos || !lesson.videos.length) {
+      vl.innerHTML = '<div style="font-size:11px;color:#2a2a2a;letter-spacing:1px;">NO VIDEOS LOADED</div>';
+    }
+
+    // Reminders
+    buildReminders(lesson.reminders || []);
+  } else {
+    // No lesson pushed yet
+    document.getElementById('agenda-display').innerHTML = '<div class="no-push-banner"><div class="npb-title">NO LESSON LOADED</div><div class="npb-sub">Push a lesson from Planning to populate this class</div></div>';
+    document.getElementById('qotd-display').textContent = '—';
+    document.getElementById('pres-list').innerHTML = '<div style="font-size:11px;color:#2a2a2a;letter-spacing:1px;">NO LESSON PUSHED</div>';
+    document.getElementById('vid-list').innerHTML = '<div style="font-size:11px;color:#2a2a2a;letter-spacing:1px;">NO LESSON PUSHED</div>';
+    buildReminders([]);
+  }
+
+  // Class status
+  document.getElementById('class-status').innerHTML =
+    '<span class="sdot blink" style="background:#4db84d;"></span>' + (sch.sub || classId) + ' &nbsp; ' + cd.students.length + ' students<br>' +
+    '<span class="sdot" style="background:#333;"></span>' + state.curDay + ' Day &nbsp;·&nbsp; ' + (sch.period || '');
+
+  // Acc count
+  document.getElementById('acc-count').textContent = cd.sn.length + ' student' + (cd.sn.length !== 1 ? 's' : '');
+
+  // Rebuild UI panels
+  buildSidebar(classId);
+  buildSNCompact(classId);
+  updateCloseSummary(classId);
+}
+
+function updatePushIndicator(cd) {
+  var ind = document.getElementById('push-indicator');
+  var lbl = document.getElementById('push-label');
+  if (cd.lesson) {
+    ind.className = 'push-indicator loaded';
+    ind.querySelector('.push-dot').style.background = '#4db84d';
+    var t = cd.pushedAt ? new Date(cd.pushedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+    lbl.textContent = '✓ LESSON LOADED' + (t ? ' · ' + t : '');
+  } else {
+    ind.className = 'push-indicator empty';
+    ind.querySelector('.push-dot').style.background = '#554400';
+    lbl.textContent = 'NO LESSON LOADED';
+  }
+}
+
+function buildReminders(rems) {
+  var el = document.getElementById('rem-list');
+  el.innerHTML = '';
+  (rems || []).forEach(function(r) {
+    var d = document.createElement('div');
+    d.style.cssText = 'display:flex;align-items:flex-start;gap:7px;padding:5px 0;font-size:12px;border-bottom:1px solid #1a1a1a;';
+    d.innerHTML = '<span style="color:#c8a800;font-size:11px;margin-top:1px;">⚡</span><span style="color:#666;">' + r + '</span>';
+    el.appendChild(d);
+  });
+  if (!rems.length) {
+    el.innerHTML = '<div style="font-size:10px;color:#2a2a2a;letter-spacing:1px;">NO REMINDERS</div>';
+  }
+}
+
+// ══════════════════════════════════════════════════
+// STATUS BOARD
+// ══════════════════════════════════════════════════
+function calcTier(h) {
+  if (!h || !h.length) return '';
+  var vals = {g:1,y:0.5,r:0}, s = 0, w = 0;
+  for (var i = 0; i < h.length; i++) { var wt = Math.pow(1.6,i); s += vals[h[i]]*wt; w += wt; }
+  var a = s/w;
+  if (a >= 0.82) return 't'; if (a >= 0.62) return 'g';
+  if (a >= 0.42) return 'y'; if (a >= 0.22) return 'o'; return 'r';
+}
+function tierStyle(tier) {
+  var s = {t:{bg:'#003a3a',bd:'#00ccff',tx:'#00ccff'},g:{bg:'#1a3a1a',bd:'#4db84d',tx:'#4db84d'},y:{bg:'#3a3200',bd:'#c8a800',tx:'#c8a800'},o:{bg:'#3a1e00',bd:'#d4720a',tx:'#d4720a'},r:{bg:'#3a0a0a',bd:'#c03030',tx:'#e05050'},'':{bg:'#2a2a2a',bd:'#333',tx:'#555'}};
+  return s[tier] || s[''];
+}
+function tierColor(tier) { return {t:'#00ccff',g:'#4db84d',y:'#c8a800',o:'#d4720a',r:'#e05050','':"#444"}[tier]||'#444'; }
+function tierLabel(tier) { return {t:'strong',g:'good',y:'mixed',o:'struggling',r:'needs help','':"hasn't been asked"}[tier]||"hasn't been asked"; }
+function dotHtml(hist) {
+  var dc = {g:'#4caf50',y:'#c8a800',r:'#c03030'}, out = '', recent = (hist||[]).slice(-3);
+  for (var i = 0; i < 3; i++) { var c = recent[i] ? dc[recent[i]] : '#2a2a2a'; out += '<span class="sbdot" style="background:'+c+'"></span>'; }
+  return out;
+}
+
+function buildSidebar(classId) {
+  var cd = getCD(classId);
+  var g  = document.getElementById('sb-grid');
+  g.innerHTML = '';
+  cd.students.forEach(function(n, i) {
+    var hist = cd.history[i] || [], tier = calcTier(hist), ts = tierStyle(tier);
+    var d = document.createElement('div');
+    d.className = 'sbbtn';
+    d.style.background = ts.bg; d.style.border = '1px solid ' + ts.bd;
+    d.innerHTML = '<div style="color:'+ts.tx+';font-size:10px;font-weight:bold;line-height:1.2;">'+n+'</div><div class="sbdots">'+dotHtml(hist)+'</div>'+(cd.behavior[i]?'<span class="sbex">!</span>':'');
+    (function(idx) { d.onclick = function() { openScore(idx); }; })(i);
+    g.appendChild(d);
+  });
+}
+
+// ══════════════════════════════════════════════════
+// SCORE LOGGING
+// ══════════════════════════════════════════════════
+function openScore(idx) {
+  var cd = getCD(state.curClassId);
+  state.activeStudentIdx = idx;
+  document.getElementById('score-name').textContent = cd.students[idx].toUpperCase();
+  document.getElementById('score-modal').classList.add('on');
+}
+function closeScore() { state.activeStudentIdx = null; document.getElementById('score-modal').classList.remove('on'); }
+
+function logScore(v) {
+  if (state.activeStudentIdx === null) return;
+  var cd  = getCD(state.curClassId);
+  var idx = state.activeStudentIdx;
+  if (!cd.history[idx]) cd.history[idx] = [];
+  cd.history[idx].push(v);
+  var scoreMap = {g:'correct',y:'partial',r:'incorrect'}, scoreVal = {g:1,y:0.5,r:0};
+  var sch = SCHEDULE.find(function(s) { return s.classId === state.curClassId; }) || {};
+  sheetsPost({ action:'logQuestion', data:{
+    class_id: state.curClassId, period: sch.period || '',
+    student_name: cd.students[idx], result: scoreMap[v], score: scoreVal[v],
+  }}).catch(function(){});
+  closeScore();
+  buildSidebar(state.curClassId);
+  updateCloseSummary(state.curClassId);
+}
+
+function showBehaviorModal() {
+  var cd = getCD(state.curClassId);
+  document.getElementById('score-modal').classList.remove('on');
+  document.getElementById('behavior-name').textContent = cd.students[state.activeStudentIdx].toUpperCase() + ' — BEHAVIOR NOTE';
+  document.getElementById('behavior-text').value = '';
+  document.getElementById('behavior-modal').classList.add('on');
+}
+function saveBehavior() {
+  var cd = getCD(state.curClassId), idx = state.activeStudentIdx;
+  cd.behavior[idx] = true;
+  var note = document.getElementById('behavior-text').value.trim();
+  var sch = SCHEDULE.find(function(s) { return s.classId === state.curClassId; }) || {};
+  sheetsPost({ action:'logSession', data:{
+    class_id: state.curClassId, period: sch.period || '',
+    student_name: cd.students[idx], event_type:'behavior', note: note,
+  }}).catch(function(){});
+  document.getElementById('behavior-modal').classList.remove('on');
+  state.activeStudentIdx = null;
+  buildSidebar(state.curClassId);
+  updateCloseSummary(state.curClassId);
+}
+function closeBehavior() { document.getElementById('behavior-modal').classList.remove('on'); state.activeStudentIdx = null; }
+
+// ══════════════════════════════════════════════════
+// ACCOMMODATIONS
+// ══════════════════════════════════════════════════
+function snStyle(done) { return done ? 'border:1px solid #4db84d;background:#1a3a1a;color:#4db84d;' : 'border:1px solid #333;background:#2a2a2a;color:#777;'; }
+
+function buildSNCompact(classId) {
+  var cd = getCD(classId), el = document.getElementById('sn-compact-btns');
+  el.innerHTML = '';
+  cd.sn.forEach(function(s, i) {
+    var b = document.createElement('div');
+    b.className = 'snbtn'; b.style.cssText = snStyle(s.done);
+    b.textContent = s.name;
+    (function(idx) { b.onclick = function() { openSN(idx); }; })(i);
+    el.appendChild(b);
+  });
+}
+
+function buildSNExpanded(classId) {
+  var cd = getCD(classId), el = document.getElementById('sn-expanded-btns');
+  if (!el) return;
+  el.innerHTML = '';
+  cd.sn.forEach(function(s, i) {
+    var b = document.createElement('div');
+    b.className = 'snbtnlg'; b.style.cssText = snStyle(s.done);
+    var items = '<div style="font-size:9px;color:#555;margin-top:3px;text-align:left;line-height:1.6;">';
+    s.items.forEach(function(it) { items += '<span style="color:'+(it.done?'#4db84d':'#555')+'">'+(it.done?'✓':'○')+' '+it.text+'</span><br>'; });
+    items += '</div>';
+    b.innerHTML = '<strong>' + s.name + '</strong>' + items;
+    (function(idx) { b.onclick = function() { openSN(idx); }; })(i);
+    el.appendChild(b);
+  });
+}
+
+function openSN(idx) {
+  var cd = getCD(state.curClassId);
+  state.snActiveIdx = idx;
+  var s = cd.sn[idx];
+  document.getElementById('sn-name').textContent = s.name.toUpperCase();
+  var el = document.getElementById('sn-items');
+  el.innerHTML = '';
+  s.items.forEach(function(it, j) {
+    var d = document.createElement('div');
+    d.className = 'snchkitem'; d.style.color = it.done ? '#4db84d' : '#888';
+    d.innerHTML = '<div style="width:12px;height:12px;border:1px solid '+(it.done?'#4db84d':'#444')+';border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#4db84d;flex-shrink:0;">'+(it.done?'✓':'')+'</div>' + it.text;
+    (function(jj) {
+      d.onclick = function() {
+        s.items[jj].done = !s.items[jj].done;
+        s.done = s.items.every(function(x) { return x.done; });
+        var sch = SCHEDULE.find(function(sc) { return sc.classId === state.curClassId; }) || {};
+        sheetsPost({ action:'logSession', data:{
+          class_id: state.curClassId, period: sch.period || '',
+          student_name: s.name, event_type:'accommodation',
+          note: s.items[jj].text + (s.items[jj].done ? ' — COMPLETED' : ' — UNCHECKED'),
+        }}).catch(function(){});
+        buildSNCompact(state.curClassId);
+        buildSNExpanded(state.curClassId);
+        openSN(idx);
+        updateCloseSummary(state.curClassId);
+      };
+    })(j);
+    el.appendChild(d);
+  });
+  document.getElementById('sn-modal').classList.add('on');
+}
+function closeSN() { document.getElementById('sn-modal').classList.remove('on'); state.snActiveIdx = null; }
+
+// ══════════════════════════════════════════════════
+// STUDENT PICKER
+// ══════════════════════════════════════════════════
+function buildPickQueue() {
+  var cd = getCD(state.curClassId);
+  var uncalled = [], struggling = [], mixed = [], rest = [];
+  cd.students.forEach(function(n, i) {
+    var hist = cd.history[i] || [], tier = calcTier(hist);
+    if (!hist.length) uncalled.push(i);
+    else if (tier === 'r' || tier === 'o') struggling.push(i);
+    else if (tier === 'y') mixed.push(i);
+    else rest.push(i);
+  });
+  function shuffle(a) { for (var i = a.length-1; i > 0; i--) { var j = Math.floor(Math.random()*(i+1)), t = a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  state.pickQueue = shuffle(uncalled).concat(shuffle(struggling)).concat(shuffle(mixed)).concat(shuffle(rest));
+}
+
+function showPick() {
+  var cd = getCD(state.curClassId);
+  if (!state.pickQueue.length) return;
+  var idx = state.pickQueue[state.curPickIdx % state.pickQueue.length];
+  var hist = cd.history[idx] || [], tier = calcTier(hist);
+  document.getElementById('pick-name').textContent = cd.students[idx].toUpperCase();
+  document.getElementById('pick-name').style.color = tierColor(tier);
+  document.getElementById('pick-tier').innerHTML = '<span style="color:'+tierColor(tier)+';">● '+tierLabel(tier)+'</span>';
+  document.getElementById('pick-reason').textContent = !hist.length ? 'not yet called on this session' : 'called on ' + hist.length + ' time' + (hist.length!==1?'s':'');
+  document.getElementById('pick-modal').dataset.sidx = idx;
+}
+
+function pickStudent() { buildPickQueue(); state.curPickIdx = 0; showPick(); document.getElementById('pick-modal').classList.add('on'); }
+function nextPick() { state.curPickIdx++; showPick(); }
+function callOnPick() { var idx = parseInt(document.getElementById('pick-modal').dataset.sidx); closePick(); openScore(idx); }
+function closePick() { document.getElementById('pick-modal').classList.remove('on'); }
+
+// ══════════════════════════════════════════════════
+// MODE SWITCHING
+// ══════════════════════════════════════════════════
+var MODES = [{id:'start',label:'▶ START'},{id:'present',label:'⬛ PRESENT'},{id:'work',label:'✎ WORK'},{id:'close',label:'■ CLOSE'}];
+MODES.forEach(function(m) {
+  var b = document.createElement('button');
+  b.style.cssText = 'padding:4px 11px;font-family:"Share Tech Mono",monospace;font-size:11px;letter-spacing:1px;border:1px solid #2a2a2a;border-radius:2px;cursor:pointer;white-space:nowrap;background:#151515;color:#666;';
+  b.textContent = m.label; b.id = 'mbtn-' + m.id;
+  styleModeBtn(b, m.id === 'start');
+  (function(mid) { b.onclick = function() { setMode(mid); }; })(m.id);
   document.getElementById('modebtnrow').appendChild(b);
 });
 
-function setDay(d){curDay=d;styleAbtn('abtn-A',d==='A');styleAbtn('abtn-B',d==='B');var f=getActivePeriods()[0];if(f!==undefined)switchClass(f);buildClsBtns();}
-function getActivePeriods(){var a=[];schedule.forEach(function(c,i){if(c.day===curDay||c.day==='AB')a.push(i);});return a;}
-function buildClsBtns(){
-  var el=document.getElementById('cls-btns');el.innerHTML='';
-  getActivePeriods().forEach(function(i){
-    var c=schedule[i],b=document.createElement('button');
-    b.style.cssText='padding:5px 13px;font-family:"Share Tech Mono",monospace;font-size:13px;border-radius:3px;cursor:pointer;letter-spacing:1px;white-space:nowrap;background:#151515;border:1px solid #2a2a2a;color:#888;';
-    b.textContent=c.name.replace('Period ','P')+' — '+c.sub;
-    styleClsBtn(b,i===curClsIdx);b.id='clsbtn-'+i;
-    (function(idx){b.onclick=function(){switchClass(idx);};})(i);
-    el.appendChild(b);
-  });
-}
-function switchClass(idx){
-  console.log('switchClass called with idx:', idx, '| schedule[idx]:', schedule[idx]);
-  curClsIdx=idx;
-  getActivePeriods().forEach(function(i){var b=document.getElementById('clsbtn-'+i);if(b)styleClsBtn(b,i===idx);});
-  loadClassData();
-  var period=schedule[idx]&&schedule[idx].period;
-  console.log('switchClass: loading data for period:', period);
-  if(period){loadRosterFromSheets(period);loadLessonsFromSheets(period);}
+function setMode(mode) {
+  state.curMode = mode;
+  document.querySelectorAll('.modearea').forEach(function(a) { a.classList.remove('on'); });
+  document.getElementById('mode-' + mode).classList.add('on');
+  MODES.forEach(function(m) { var b = document.getElementById('mbtn-' + m.id); if (b) styleModeBtn(b, m.id === mode); });
+  var compact = document.getElementById('bt-compact'), expanded = document.getElementById('sn-expanded');
+  if (mode === 'work') {
+    compact.style.display = 'none'; expanded.style.display = 'flex';
+    buildSNExpanded(state.curClassId);
+  } else {
+    compact.style.display = 'flex'; expanded.style.display = 'none';
+  }
+  updateCloseSummary(state.curClassId);
 }
 
-function loadClassData(){
-  var cls=classData[curClsIdx],sc=schedule[curClsIdx];
-  document.getElementById('sb-header').textContent='STATUS BOARD — '+sc.name.replace('Period ','P');
-  document.getElementById('agenda-display').innerHTML=cls.agenda.map(function(a,i){return'<span style="color:#c8a800;">'+String(i+1).padStart(2,'0')+'</span> &nbsp;'+a+'<br>';}).join('');
-  document.getElementById('qotd-display').textContent=cls.qotd;
-  document.getElementById('class-status').innerHTML='<span class="sdot blink" style="background:#4db84d;"></span>'+sc.name+' — '+sc.sub+' &nbsp; '+cls.students.length+' students<br><span class="sdot" style="background:#333;"></span>'+curDay+' Day &nbsp;·&nbsp; <span style="color:#00ccff;">Unit 3</span>';
-  var pl=document.getElementById('pres-list');pl.innerHTML='';
-  cls.pres.forEach(function(p,i){var b=document.createElement('button');b.style.cssText='display:block;width:100%;text-align:left;padding:4px 10px;margin-bottom:4px;border-radius:3px;font-family:"Share Tech Mono",monospace;font-size:10px;cursor:pointer;letter-spacing:1px;'+(i===0?'border:1px solid #c8a800;background:#1a1500;color:#c8a800;':'border:1px solid #2a2a2a;background:#1a1a1a;color:#888;');b.textContent='▶ '+p.l;b.onclick=function(){if(p.url)window.open(p.url,'_blank');else alert('No URL set for: '+p.l);};pl.appendChild(b);});
-  var vl=document.getElementById('vid-list');vl.innerHTML='';
-  cls.vids.forEach(function(v){var b=document.createElement('button');b.style.cssText='display:block;width:100%;text-align:left;padding:4px 10px;margin-bottom:4px;border:1px solid #2a2a2a;border-radius:3px;background:#1a1a1a;color:#888;font-family:"Share Tech Mono",monospace;font-size:10px;cursor:pointer;';b.textContent='▶ '+v.l;b.onclick=function(){if(v.url)window.open(v.url,'_blank');else alert('No URL set for: '+v.l);};vl.appendChild(b);});
-  buildReminders();buildSidebar();buildSNCompact();
-  document.getElementById('acc-count').textContent=cls.sn.length+' student'+(cls.sn.length!==1?'s':'');
-  updateCloseSummary();
+// ══════════════════════════════════════════════════
+// CLOSE SUMMARY
+// ══════════════════════════════════════════════════
+function updateCloseSummary(classId) {
+  var cd = getCD(classId);
+  var asked  = Object.keys(cd.history).reduce(function(s,k) { return s + cd.history[k].length; }, 0);
+  var called = Object.keys(cd.history).filter(function(k) { return cd.history[k].length > 0; }).length;
+  var accDone = cd.sn.filter(function(s) { return s.done; }).length;
+  var beh    = Object.keys(cd.behavior).filter(function(k) { return cd.behavior[k]; }).length;
+  document.getElementById('close-asked').textContent  = asked;
+  document.getElementById('close-called').textContent = called + ' / ' + cd.students.length;
+  document.getElementById('close-acc').textContent    = accDone + ' / ' + cd.sn.length;
+  document.getElementById('close-beh').textContent    = beh;
 }
 
-function buildReminders(){
-  var cls=classData[curClsIdx],el=document.getElementById('rem-list');el.innerHTML='';
-  (cls.rems||[]).forEach(function(r){
-    var d=document.createElement('div');
-    d.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:14px;border-bottom:1px solid #1a1a1a;';
-    var bullet=document.createElement('span');
-    bullet.style.cssText='color:#c8a800;font-size:12px;margin-top:2px;';
-    bullet.textContent='⚡';
-    var txt=document.createElement('span');
-    txt.style.color='#888';
-    txt.textContent=r;
-    d.appendChild(bullet);
-    d.appendChild(txt);
-    el.appendChild(d);
-  });
+// ══════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════
+function updateTimerDisp() { var m = Math.floor(state.timerSecs/60), s = state.timerSecs%60; document.getElementById('timer-disp').textContent = m + ':' + (s<10?'0':'') + s; }
+function startTimer() {
+  if (state.timerRunning) {
+    clearInterval(state.timerInt); state.timerRunning = false;
+    var b = document.getElementById('timer-start-btn'); b.textContent = '▶ START'; b.style.borderColor = '#2a2a2a'; b.style.color = '#666';
+    return;
+  }
+  state.timerRunning = true;
+  var b = document.getElementById('timer-start-btn'); b.textContent = '⏸ PAUSE'; b.style.borderColor = '#c8a800'; b.style.color = '#c8a800';
+  state.timerInt = setInterval(function() { state.timerSecs++; updateTimerDisp(); }, 1000);
 }
+function resetTimer() { clearInterval(state.timerInt); state.timerRunning = false; state.timerSecs = 0; updateTimerDisp(); var b = document.getElementById('timer-start-btn'); b.textContent = '▶ START'; b.style.borderColor = '#2a2a2a'; b.style.color = '#666'; }
 
-function calcTier(h){if(!h||!h.length)return'';var vals={g:1,y:0.5,r:0},s=0,w=0;for(var i=0;i<h.length;i++){var wt=Math.pow(1.6,i);s+=vals[h[i]]*wt;w+=wt;}var a=s/w;if(a>=0.82)return't';if(a>=0.62)return'g';if(a>=0.42)return'y';if(a>=0.22)return'o';return'r';}
-function tierStyle(tier){var s={t:{bg:'#003a3a',bd:'#00ccff',tx:'#00ccff'},g:{bg:'#1a3a1a',bd:'#4db84d',tx:'#4db84d'},y:{bg:'#3a3200',bd:'#c8a800',tx:'#c8a800'},o:{bg:'#3a1e00',bd:'#d4720a',tx:'#d4720a'},r:{bg:'#3a0a0a',bd:'#c03030',tx:'#e05050'},'':{bg:'#2a2a2a',bd:'#333',tx:'#666'}};return s[tier]||s[''];}
-function tierColor(tier){return{t:'#00ccff',g:'#4db84d',y:'#c8a800',o:'#d4720a',r:'#e05050','':"#666"}[tier]||'#666';}
-function tierLabel(tier){return{t:'strong',g:'good',y:'mixed',o:'struggling',r:'needs help','':"hasn't been asked"}[tier]||"hasn't been asked";}
-function dotHtml(hist){var dc={g:'#4caf50',y:'#c8a800',r:'#c03030'},out='',recent=(hist||[]).slice(-3);for(var i=0;i<3;i++){var c=recent[i]?dc[recent[i]]:'#2a2a2a';out+='<span class="sbdot" style="background:'+c+'"></span>';}return out;}
+// ══════════════════════════════════════════════════
+// SEARCH + PROJECTOR
+// ══════════════════════════════════════════════════
+function imgSearch() { var q = document.getElementById('img-search-inp').value.trim(); if (!q) return; window.open('https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q), '_blank'); }
+function ytSearch()  { var q = document.getElementById('yt-search-inp').value.trim();  if (!q) return; window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(q), '_blank'); }
 
-function buildSidebar(){
-  var cls=classData[curClsIdx],g=document.getElementById('sb-grid');g.innerHTML='';
-  cls.students.forEach(function(n,i){
-    var hist=cls.history[i]||[],tier=calcTier(hist),ts=tierStyle(tier);
-    var d=document.createElement('div');d.className='sbbtn';d.style.background=ts.bg;d.style.border='1px solid '+ts.bd;
-    d.innerHTML='<div style="color:'+ts.tx+';font-size:11px;font-weight:bold;line-height:1.2;">'+n+'</div><div class="sbdots">'+dotHtml(hist)+'</div>'+(cls.behavior[i]?'<span class="sbex">!</span>':'');
-    (function(idx){d.onclick=function(){openScore(idx);};})(i);g.appendChild(d);
-  });
-}
-
-function openScore(idx){var cls=classData[curClsIdx];activeIdx=idx;document.getElementById('score-name').textContent=cls.students[idx].toUpperCase();document.getElementById('score-modal').classList.add('on');}
-function closeScore(){activeIdx=null;document.getElementById('score-modal').classList.remove('on');}
-function logScore(v){
-  if(activeIdx===null)return;
-  var cls=classData[curClsIdx];
-  if(!cls.history[activeIdx])cls.history[activeIdx]=[];
-  cls.history[activeIdx].push(v);
-  var scoreMap={g:'correct',y:'partial',r:'incorrect'};
-  var scoreVal={g:1,y:0.5,r:0};
-  var period=schedule[curClsIdx]&&schedule[curClsIdx].period;
-  var student={name:cls.students[activeIdx],id:cls.students[activeIdx]};
-  logQuestionToSheets(period,student,'',scoreMap[v],scoreVal[v]);
-  closeScore();buildSidebar();updateCloseSummary();
-}
-function showBehaviorModal(){var cls=classData[curClsIdx];document.getElementById('score-modal').classList.remove('on');document.getElementById('behavior-name').textContent=cls.students[activeIdx].toUpperCase()+' — BEHAVIOR NOTE';document.getElementById('behavior-text').value='';document.getElementById('behavior-modal').classList.add('on');}
-function saveBehavior(){
-  var cls=classData[curClsIdx];
-  cls.behavior[activeIdx]=true;
-  var note=document.getElementById('behavior-text').value.trim();
-  var period=schedule[curClsIdx]&&schedule[curClsIdx].period;
-  logSessionToSheets(period,cls.students[activeIdx],'','behavior',note);
-  document.getElementById('behavior-modal').classList.remove('on');
-  activeIdx=null;buildSidebar();updateCloseSummary();
-}
-function closeBehavior(){document.getElementById('behavior-modal').classList.remove('on');activeIdx=null;}
-
-function snStyle(done){return done?'border:1px solid #4db84d;background:#1a3a1a;color:#4db84d;':'border:1px solid #333;background:#2a2a2a;color:#888;';}
-function buildSNCompact(){var cls=classData[curClsIdx],el=document.getElementById('sn-compact-btns');el.innerHTML='';cls.sn.forEach(function(s,i){var b=document.createElement('div');b.className='snbtn';b.style.cssText=snStyle(s.done);b.textContent=s.name;(function(idx){b.onclick=function(){openSN(idx);};})(i);el.appendChild(b);});}
-function buildSNExpanded(){var cls=classData[curClsIdx],el=document.getElementById('sn-expanded-btns');if(!el)return;el.innerHTML='';cls.sn.forEach(function(s,i){var b=document.createElement('div');b.className='snbtnlg';b.style.cssText=snStyle(s.done);var items='<div style="font-size:9px;color:#555;margin-top:3px;text-align:left;line-height:1.6;">';s.items.forEach(function(it){items+='<span style="color:'+(it.done?'#4db84d':'#555')+'">'+(it.done?'✓':'○')+' '+it.text+'</span><br>';});items+='</div>';b.innerHTML='<strong>'+s.name+'</strong>'+items;(function(idx){b.onclick=function(){openSN(idx);};})(i);el.appendChild(b);});}
-function openSN(idx){var cls=classData[curClsIdx];snActiveIdx=idx;var s=cls.sn[idx];document.getElementById('sn-name').textContent=s.name.toUpperCase();var el=document.getElementById('sn-items');el.innerHTML='';s.items.forEach(function(it,j){var d=document.createElement('div');d.className='snchkitem';d.style.color=it.done?'#4db84d':'#888';d.innerHTML='<div style="width:12px;height:12px;border:1px solid '+(it.done?'#4db84d':'#444')+';border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#4db84d;flex-shrink:0;">'+(it.done?'✓':'')+'</div>'+it.text;(function(jj){d.onclick=function(){s.items[jj].done=!s.items[jj].done;s.done=s.items.every(function(x){return x.done;});var period=schedule[curClsIdx]&&schedule[curClsIdx].period;logSessionToSheets(period,s.name,'','accommodation',s.items[jj].text + (s.items[jj].done ? ' - COMPLETED' : ' - UNCHECKED'));buildSNCompact();buildSNExpanded();openSN(idx);updateCloseSummary();};})(j);el.appendChild(d);});document.getElementById('sn-modal').classList.add('on');}
-function closeSN(){document.getElementById('sn-modal').classList.remove('on');snActiveIdx=null;}
-
-function buildPickQueue(){var cls=classData[curClsIdx],uncalled=[],struggling=[],mixed=[],rest=[];cls.students.forEach(function(n,i){var hist=cls.history[i]||[],tier=calcTier(hist);if(!hist.length)uncalled.push(i);else if(tier==='r'||tier==='o')struggling.push(i);else if(tier==='y')mixed.push(i);else rest.push(i);});function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}pickQueue=shuffle(uncalled).concat(shuffle(struggling)).concat(shuffle(mixed)).concat(shuffle(rest));}
-function showPick(){var cls=classData[curClsIdx];if(!pickQueue.length)return;var idx=pickQueue[curPickIdx%pickQueue.length];var hist=cls.history[idx]||[],tier=calcTier(hist);document.getElementById('pick-name').textContent=cls.students[idx].toUpperCase();document.getElementById('pick-name').style.color=tierColor(tier);document.getElementById('pick-tier').innerHTML='<span style="color:'+tierColor(tier)+';">● '+tierLabel(tier)+'</span>';document.getElementById('pick-reason').textContent=!hist.length?'not yet called on this session':'called on '+hist.length+' time'+(hist.length!==1?'s':'');document.getElementById('pick-modal').dataset.sidx=idx;}
-function pickStudent(){buildPickQueue();curPickIdx=0;showPick();document.getElementById('pick-modal').classList.add('on');}
-function nextPick(){curPickIdx++;showPick();}
-function callOnPick(){var idx=parseInt(document.getElementById('pick-modal').dataset.sidx);closePick();openScore(idx);}
-function closePick(){document.getElementById('pick-modal').classList.remove('on');}
-
-function setMode(mode){
-  curMode=mode;
-  document.querySelectorAll('.modearea').forEach(function(a){a.classList.remove('on');});
-  document.getElementById('mode-'+mode).classList.add('on');
-  modeDefs.forEach(function(m){var b=document.getElementById('mbtn-'+m.id);if(b)styleModeBtn(b,m.id===mode);});
-  var compact=document.getElementById('bt-compact'),expanded=document.getElementById('sn-expanded');
-  if(mode==='work'){compact.style.display='none';expanded.style.display='flex';buildSNExpanded();}
-  else{compact.style.display='flex';expanded.style.display='none';}
-  updateCloseSummary();
-}
-
-function updateCloseSummary(){
-  var cls=classData[curClsIdx];
-  var asked=Object.keys(cls.history).reduce(function(s,k){return s+cls.history[k].length;},0);
-  var called=Object.keys(cls.history).filter(function(k){return cls.history[k].length>0;}).length;
-  var accDone=cls.sn.filter(function(s){return s.done;}).length;
-  var beh=Object.keys(cls.behavior).filter(function(k){return cls.behavior[k];}).length;
-  document.getElementById('close-asked').textContent=asked;
-  document.getElementById('close-called').textContent=called+' / '+cls.students.length;
-  document.getElementById('close-acc').textContent=accDone+' / '+cls.sn.length;
-  document.getElementById('close-beh').textContent=beh;
-}
-
-function updateTimerDisp(){var m=Math.floor(timerSecs/60),s=timerSecs%60;document.getElementById('timer-disp').textContent=m+':'+(s<10?'0':'')+s;}
-function startTimer(){if(timerRunning){clearInterval(timerInt);timerRunning=false;var b=document.getElementById('timer-start-btn');b.textContent='▶ START';b.style.borderColor='#2a2a2a';b.style.color='#888';return;}timerRunning=true;var b=document.getElementById('timer-start-btn');b.textContent='⏸ PAUSE';b.style.borderColor='#c8a800';b.style.color='#c8a800';timerInt=setInterval(function(){timerSecs++;updateTimerDisp();},1000);}
-function resetTimer(){clearInterval(timerInt);timerRunning=false;timerSecs=0;updateTimerDisp();var b=document.getElementById('timer-start-btn');b.textContent='▶ START';b.style.borderColor='#2a2a2a';b.style.color='#888';}
-
-function imgSearch(){var q=document.getElementById('img-search-inp').value.trim();if(!q)return;window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q),'_blank');}
-function ytSearch(){var q=document.getElementById('yt-search-inp').value.trim();if(!q)return;window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(q),'_blank');}
-
-// Save current class data to localStorage for Start Screen
-function saveStartScreenData(){
-  var cls = classData[curClsIdx];
-  var sc = schedule[curClsIdx];
-  var les = lessons.find(function(l){return l.id === curLes;});
-  var data = {
-    className: sc ? sc.sub : 'Class',
-    period: sc ? sc.period : '',
-    qotd: cls ? cls.qotd : '',
-    agenda: cls ? cls.agenda : [],
-    reminders: cls ? cls.rems : [],
-    imageUrl: les ? les.imageUrl : '',
-    timestamp: Date.now()
-  };
+function launchProjector() {
+  var cd  = getCD(state.curClassId);
+  var sch = SCHEDULE.find(function(s) { return s.classId === state.curClassId; }) || {};
+  var lesson = cd.lesson || {};
   try {
-    localStorage.setItem('classCommStartScreen', JSON.stringify(data));
-  } catch(e) {
-    console.warn('Could not save to localStorage:', e);
-  }
+    localStorage.setItem('classCommStartScreen', JSON.stringify({
+      className: sch.sub || 'Class', period: sch.period || '',
+      qotd: lesson.qotd || '', agenda: lesson.agenda || [],
+      reminders: lesson.reminders || [], imageUrl: lesson.image_url || '',
+      timestamp: Date.now()
+    }));
+  } catch(e) {}
+  window.open('https://efillinger.github.io/teacher-os-mission-control/student-display.html', '_blank');
 }
 
-function launchProjector(){
-  // Save current data to localStorage first
-  saveStartScreenData();
-  // Open the external start screen
-  window.open('https://efillinger.github.io/teacher-os-mission-control/student-display.html','_blank');
-}
+// ══════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════
+function openExport(type) { state.exportType = type; document.getElementById('export-title').textContent = 'EXPORT — ' + type.toUpperCase(); document.getElementById('export-modal').classList.add('on'); }
+function closeExport() { document.getElementById('export-modal').classList.remove('on'); }
 
-function openExport(type){exportType=type;document.getElementById('export-title').textContent='EXPORT — '+type.toUpperCase();document.getElementById('export-modal').classList.add('on');}
-function closeExport(){document.getElementById('export-modal').classList.remove('on');}
-function doExport(range){
+function doExport(range) {
   closeExport();
-  var period = schedule[curClsIdx] && schedule[curClsIdx].period;
-  var className = schedule[curClsIdx] && schedule[curClsIdx].sub;
-  
-  // Determine which action to call based on export type
-  var action = '';
-  if (exportType === 'Accommodations Log') action = 'getSessionLogs';
-  else if (exportType === 'Question Log') action = 'getQuestionLog';
-  else if (exportType === 'Behavior Log') action = 'getSessionLogs';
-  
-  showStatus('Fetching ' + exportType + '...');
-  
-  sheetsGet({ action: action, period: period, range: range, logType: exportType }).then(function(res) {
-    if (res.error) {
-      showStatus('Export error: ' + res.error, '#3a0a0a');
-      return;
-    }
-    
+  var sch = SCHEDULE.find(function(s) { return s.classId === state.curClassId; }) || {};
+  var action = state.exportType === 'Question Log' ? 'getQuestionLog' : 'getSessionLogs';
+  showStatus('Fetching ' + state.exportType + '...');
+  sheetsGet({ action: action, class_id: state.curClassId, range: range, logType: state.exportType }).then(function(res) {
+    if (res.error) { showStatus('Export error', true); return; }
     var data = res.logs || res.questions || [];
-    if (!data.length) {
-      showStatus('No data found for ' + exportType);
-      alert('No ' + exportType + ' data found for ' + className + ' (' + range + ')');
-      return;
-    }
-    
-    // Build CSV content
-    var csv = '';
-    if (exportType === 'Question Log') {
-      csv = 'Date,Period,Student,Result,Score\n';
-      data.forEach(function(row) {
-        csv += '"' + (row.date||'') + '","' + (row.period||'') + '","' + (row.studentName||'') + '","' + (row.result||'') + '",' + (row.score||0) + '\n';
-      });
-    } else {
-      csv = 'Date,Period,Student,Event Type,Note\n';
-      data.forEach(function(row) {
-        csv += '"' + (row.date||'') + '","' + (row.period||'') + '","' + (row.studentName||'') + '","' + (row.eventType||'') + '","' + (row.note||'').replace(/"/g,'""') + '"\n';
-      });
-    }
-    
-    // Download as file
-    var blob = new Blob([csv], { type: 'text/csv' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = exportType.replace(/ /g, '_') + '_' + period + '_' + range + '.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
+    if (!data.length) { showStatus('No data found'); alert('No data found for ' + state.exportType); return; }
+    var csv = state.exportType === 'Question Log'
+      ? 'Date,Period,Student,Result,Score\n' + data.map(function(r) { return '"'+(r.date||'')+'","'+(r.period||'')+'","'+(r.student_name||'')+'","'+(r.result||'')+'",'+  (r.score||0); }).join('\n')
+      : 'Date,Period,Student,Event Type,Note\n' + data.map(function(r) { return '"'+(r.date||'')+'","'+(r.period||'')+'","'+(r.student_name||'')+'","'+(r.event_type||'')+'","'+(r.note||'').replace(/"/g,'""')+'"'; }).join('\n');
+    var blob = new Blob([csv], {type:'text/csv'});
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = state.exportType.replace(/ /g,'_') + '_' + (sch.period||'') + '_' + range + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     showStatus('Exported ' + data.length + ' records');
-  }).catch(function(e) {
-    showStatus('Export failed: ' + e, '#3a0a0a');
   });
 }
 
-function saveDebrief(){var note=document.getElementById('debrief-text').value.trim();if(!note)return;var now=new Date();var dateStr=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});alert('Debrief note saved for current lesson:\n\n"'+note+'"');document.getElementById('debrief-text').value='';document.getElementById('debrief-modal').classList.remove('on');}
-
-// ══════════════════════════════════════════════════════
-// PREP SCREEN
-// ══════════════════════════════════════════════════════
-
-function setPrepDay(d){
-  prepDay=d;
-  document.getElementById('prep-abtn-A').style.background=d==='A'?'#003a4a':'#1a1a1a';
-  document.getElementById('prep-abtn-A').style.color=d==='A'?'#00ccff':'#888';
-  document.getElementById('prep-abtn-B').style.background=d==='B'?'#003a4a':'#1a1a1a';
-  document.getElementById('prep-abtn-B').style.color=d==='B'?'#00ccff':'#888';
-  prepPer=0;
-  buildPrepPlist();
-  updatePrepAP();
-  var activeIndices = getPrepActive();
-  if(activeIndices.length > 0){
-    var firstIdx = activeIndices[0];
-    var period = schedule[firstIdx] && schedule[firstIdx].period;
-    if(period){ loadLessonsFromSheets(period); }
-  }
-}
-function getPrepActive(){var a=[];schedule.forEach(function(c,i){if(c.day===prepDay||c.day==='AB')a.push(i);});return a;}
-function updatePrepAP(){var a=getPrepActive();document.getElementById('prep-aplbl').textContent=a.map(function(i){return schedule[i].name.replace('Period ','P');}).join(' · ')||'—';}
-function buildPrepPlist(){
-  var el=document.getElementById('prep-plist');el.innerHTML='';
-  var activeIndices = getPrepActive();
-  activeIndices.forEach(function(schedIdx,listIdx){
-    var c=schedule[schedIdx];
-    var lesName=lessons.length?(lessons[0].name||lessons[0].title||'Untitled'):'click to load';
-    var d=document.createElement('div');d.className='pitem'+(listIdx===prepPer?' on':'');
-    d.innerHTML='<div style="font-size:14px;font-weight:bold;margin-bottom:2px;">'+c.sub+'</div><div style="font-size:11px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.name+' · '+lesName+'</div>';
-    (function(schIdx,lstIdx){d.onclick=function(){
-      if(lessonDirty){
-        if(!confirm('You have unsaved lesson changes. Switch class anyway?')){
-          return;
-        }
-        clearDirty();
-      }
-      prepPer=lstIdx;
-      buildPrepPlist();
-      var period=schedule[schIdx]&&schedule[schIdx].period;
-      if(period){ loadLessonsFromSheets(period); }
-    };})(schedIdx,listIdx);
-    el.appendChild(d);
-  });
-}
-function buildLib(){
-  var el=document.getElementById('lbody');el.innerHTML='';
-  var units={};lessons.forEach(function(l){if(!units[l.unit])units[l.unit]=[];units[l.unit].push(l);});
-  Object.keys(units).forEach(function(u){
-    var uh=document.createElement('div');uh.style.cssText='font-size:11px;color:#444;letter-spacing:1px;margin-bottom:4px;margin-top:10px;padding-bottom:3px;border-bottom:1px solid #1a1a1a;';uh.textContent=u;el.appendChild(uh);
-    units[u].forEach(function(l){
-      var ld=document.createElement('div');ld.className='rlesson'+(l.id===curLes?' on':'');
-      var dcount=(l.debrief||[]).length;ld.innerHTML='<div>'+(l.name||l.title||'Untitled')+(l.multi?'<span class="tag">multi</span>':'')+'</div><div style="font-size:10px;color:#333;">'+dcount+' debrief note'+(dcount!==1?'s':'')+'</div>';
-      (function(lid){ld.onclick=function(){curLes=lid;loadEd(lid);buildLib();};})(l.id);el.appendChild(ld);
-    });
-  });
-}
-function loadEd(lid){
-  curLes=lid;var l=lessons.find(function(x){return x.id===lid;});if(!l)return;
-  clearDirty();
-  var lesTitle=(l.name||l.title||'Untitled');var lesUnit=(l.unit||'');document.getElementById('etitle').textContent=lesTitle.toUpperCase()+(lesUnit?' — '+lesUnit.toUpperCase():'');
-  buildLib();
-  var b=document.getElementById('ebody');b.innerHTML='';
-  // QOTD
-  var qz=mz('QUESTION OF THE DAY');var qi=document.createElement('input');qi.className='inp';qi.value=l.qotd;qi.style.width='100%';qi.onchange=function(){l.qotd=this.value;markDirty();};qz.appendChild(qi);b.appendChild(qz);
-  // AGENDA
-  var az=mz('AGENDA','ADD ITEM');var al=document.createElement('div');
-  l.agenda.forEach(function(it,i){al.appendChild(marow(it,i,l));});
-  az.appendChild(al);az.querySelector('button').onclick=function(){l.agenda.push('New item');markDirty();loadEd(lid);};b.appendChild(az);
-  // PRESENTATIONS
-  var pz=mz('PRESENTATIONS','ADD LINK');var pl=document.createElement('div');
-  l.pres.forEach(function(p,i){pl.appendChild(mlrow(p,i,l.pres,lid));});
-  pz.appendChild(pl);pz.querySelector('button').onclick=function(){l.pres.push({t:'slides',l:'New Presentation',url:''});markDirty();loadEd(lid);};b.appendChild(pz);
-  // VIDEOS
-  var vz=mz('VIDEOS','ADD LINK');var vl=document.createElement('div');
-  l.vids.forEach(function(v,i){vl.appendChild(mlrow(v,i,l.vids,lid));});
-  vz.appendChild(vl);vz.querySelector('button').onclick=function(){l.vids.push({t:'yt',l:'New Video',url:''});markDirty();loadEd(lid);};b.appendChild(vz);
-  // REMINDERS
-  var rz=mz('REMINDERS','ADD');var rl=document.createElement('div');
-  l.rems.forEach(function(r,i){rl.appendChild(mrrow(r,i,l,lid));});
-  rz.appendChild(rl);rz.querySelector('button').onclick=function(){l.rems.push('New reminder');markDirty();loadEd(lid);};b.appendChild(rz);
-  // DEBRIEF
-  var dz=mz('DEBRIEF NOTES');var db=document.createElement('div');db.className='dbx';
-  if(!l.debrief.length){db.innerHTML='<span style="color:#2a2a2a;">no notes yet</span>';}
-  else{l.debrief.forEach(function(de){var d=document.createElement('div');d.className='dent';d.innerHTML='<div class="ddate">'+de.d+'</div><div>'+de.n+'</div>';db.appendChild(d);});}
-  dz.appendChild(db);
-  var adb=document.createElement('button');adb.style.cssText='font-size:13px;color:#336;cursor:pointer;padding:5px 10px;border:1px dashed #223;border-radius:3px;background:none;font-family:"Share Tech Mono",monospace;letter-spacing:1px;margin-top:7px;';adb.textContent='+ ADD DEBRIEF NOTE';
-  adb.onclick=function(){var n=prompt('Debrief note:');if(n){var now=new Date();l.debrief.unshift({d:now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),n:n});markDirty();loadEd(lid);}};
-  dz.appendChild(adb);b.appendChild(dz);
-}
-function mz(lbl,act){
-  var z=document.createElement('div');z.className='zone';
-  var zl=document.createElement('div');zl.className='zlbl';zl.textContent=lbl;
-  if(act){var za=document.createElement('button');za.className='zact';za.textContent='+ '+act;zl.appendChild(za);}
-  z.appendChild(zl);return z;
-}
-function marow(it,i,l){
-  var r=document.createElement('div');r.className='arow';
-  var n=document.createElement('span');n.style.cssText='font-size:13px;color:#c8a800;width:20px;flex-shrink:0;';n.textContent=String(i+1).padStart(2,'0');
-  var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.onchange=function(){l.agenda[i]=this.value;markDirty();};
-  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){l.agenda.splice(i,1);markDirty();loadEd(l.id);};
-  r.appendChild(n);r.appendChild(inp);r.appendChild(d);return r;
-}
-function mlrow(it,i,arr,lid){
-  var r=document.createElement('div');r.className='lrow';
-  var tmap={slides:'#4a8adf',canva:'#c04adf',yt:'#df4a4a'};
-  var bmap={slides:'#1a4a8a',canva:'#4a1a4a',yt:'#4a1a1a'};
-  var tg=document.createElement('span');tg.className='ltag';tg.style.cssText='border:1px solid '+bmap[it.t]+';color:'+tmap[it.t]+';font-size:9px;padding:2px 5px;border-radius:2px;white-space:nowrap;';tg.textContent=it.t.toUpperCase();
-  var lbl=document.createElement('input');lbl.className='inp';lbl.value=it.l;lbl.style.flex='1';lbl.placeholder='Label...';lbl.onchange=function(){it.l=this.value;markDirty();};
-  var url=document.createElement('input');url.className='inp';url.value=it.url||'';url.style.flex='1.5';url.placeholder='Paste URL...';url.onchange=function(){it.url=this.value;markDirty();};
-  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){arr.splice(i,1);markDirty();loadEd(lid);};
-  r.appendChild(tg);r.appendChild(lbl);r.appendChild(url);r.appendChild(d);return r;
-}
-function mrrow(it,i,l,lid){
-  var r=document.createElement('div');r.style.cssText='display:flex;align-items:center;gap:5px;margin-bottom:3px;';
-  var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.onchange=function(){l.rems[i]=this.value;markDirty();};
-  var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){l.rems.splice(i,1);markDirty();loadEd(lid);};
-  r.appendChild(inp);r.appendChild(d);return r;
+function saveDebrief() {
+  var note = document.getElementById('debrief-text').value.trim();
+  if (!note) return;
+  showStatus('Debrief saved');
+  document.getElementById('debrief-text').value = '';
+  document.getElementById('debrief-modal').classList.remove('on');
 }
 
-// SETTINGS
-function openSov(){document.getElementById('sov').classList.add('on');buildSch();buildRosCls();}
-function closeSov(){document.getElementById('sov').classList.remove('on');}
-function stab(id,el){
-  document.querySelectorAll('.ptab').forEach(function(b){b.style.color='#444';b.style.borderBottom='2px solid transparent';});
-  el.style.color='#c8a800';el.style.borderBottom='2px solid #c8a800';
-  document.querySelectorAll('.tc').forEach(function(c){c.classList.remove('on');});
-  document.getElementById('tc-'+id).classList.add('on');
+// ══════════════════════════════════════════════════
+// MANUAL REFRESH
+// ══════════════════════════════════════════════════
+function manualRefresh() {
+  showStatus('Refreshing...');
+  loadClassFromSheets(state.curClassId);
 }
-function buildSch(){
-  var el=document.getElementById('schrows');el.innerHTML='';
-  schedule.forEach(function(c,i){
-    var row=document.createElement('div');row.className='srow';
-    var ni=document.createElement('input');ni.className='inp';ni.value=c.name;ni.style.fontSize='10px';ni.onchange=function(){schedule[i].name=this.value;};
-    var si=document.createElement('input');si.className='inp';si.value=c.sub;si.style.fontSize='10px';si.onchange=function(){schedule[i].sub=this.value;};
-    var dw=document.createElement('div');dw.style.cssText='display:flex;gap:3px;';
-    ['A','B'].forEach(function(d){
-      var dt=document.createElement('button');dt.textContent=d;styleDtag(dt,d,c.day);
-      (function(dd,ii){dt.onclick=function(){var cur=schedule[ii].day;if(dd==='A'){if(cur==='A')schedule[ii].day='';else if(cur==='')schedule[ii].day='A';else if(cur==='B')schedule[ii].day='AB';else if(cur==='AB')schedule[ii].day='A';}else{if(cur==='B')schedule[ii].day='';else if(cur==='')schedule[ii].day='B';else if(cur==='A')schedule[ii].day='AB';else if(cur==='AB')schedule[ii].day='B';}buildSch();};})(d,i);
-      dw.appendChild(dt);
-    });
-    var db=document.createElement('button');db.style.cssText='padding:5px 10px;font-family:"Share Tech Mono",monospace;font-size:13px;border:1px solid #2a2a2a;border-radius:3px;background:none;color:#444;cursor:pointer;';db.textContent='✕';db.onclick=function(){schedule.splice(i,1);buildSch();};
-    row.appendChild(ni);row.appendChild(si);row.appendChild(dw);row.appendChild(db);el.appendChild(row);
-  });
-}
-function addSch(){schedule.push({name:'New Class',sub:'Subject',day:'A'});buildSch();}
-function saveSch(){buildPrepPlist();updatePrepAP();buildClsBtns();closeSov();alert('Schedule saved!');}
 
-function buildRosCls(){
-  var el=document.getElementById('rclsrow');el.innerHTML='';
-  schedule.forEach(function(c,i){
-    var b=document.createElement('button');
-    b.style.cssText='padding:5px 13px;border-radius:3px;font-family:"Share Tech Mono",monospace;font-size:13px;cursor:pointer;';
-    if(i===curRosCls){b.style.border='1px solid #c8a800';b.style.background='#1a1500';b.style.color='#c8a800';}
-    else{b.style.border='1px solid #2a2a2a';b.style.background='#151515';b.style.color='#555';}
-    b.textContent=c.name;
-    (function(ii){b.onclick=function(){curRosCls=ii;buildRosCls();buildSlist();};})(i);
-    el.appendChild(b);
-  });
-  buildSlist();
-}
-function buildSlist(){
-  var c=schedule[curRosCls],sts=ros[curRosCls]||[];
-  var rc=sts.filter(function(s){return s.reqs;}).length;
-  document.getElementById('rcname').textContent=c?c.name+' — '+c.sub:'SELECT A CLASS';
-  document.getElementById('rccount').textContent=sts.length+' students';
-  document.getElementById('rcreqs').textContent=rc>0?'· '+rc+' with requirements':'';
-  var el=document.getElementById('slist');el.innerHTML='';
-  if(!sts.length){el.innerHTML='<div style="color:#2a2a2a;font-size:10px;text-align:center;padding:8px;">no students yet</div>';return;}
-  sts.forEach(function(s,i){
-    var row=document.createElement('div');row.className='strow';
-    var num=document.createElement('span');num.style.cssText='color:#333;font-size:9px;width:18px;flex-shrink:0;';num.textContent=i+1;
-    var nm=document.createElement('span');nm.style.flex='1';nm.textContent=s.name;
-    var ib=document.createElement('button');styleIbtn(ib,s.reqs);ib.textContent='i';
-    ib.title=s.reqs?'Has requirements — click to edit':'Add special requirements';
-    (function(ii){ib.onclick=function(e){e.stopPropagation();openReq(ii);};})(i);
-    var dl=document.createElement('span');dl.style.cssText='color:#333;cursor:pointer;padding:0 3px;font-size:10px;';dl.textContent='✕';dl.onclick=function(){ros[curRosCls].splice(i,1);buildSlist();};
-    row.appendChild(num);row.appendChild(nm);row.appendChild(ib);row.appendChild(dl);el.appendChild(row);
-  });
-}
-function doPaste(){var txt=document.getElementById('pastea').value.trim();if(!txt)return;var names=txt.split('\n').map(function(n){return n.trim();}).filter(Boolean);if(!ros[curRosCls])ros[curRosCls]=[];names.forEach(function(n){ros[curRosCls].push({name:n,reqs:false,items:[],notes:''});});document.getElementById('pastea').value='';buildSlist();}
-function doManual(){var inp=document.getElementById('manname');var nm=inp.value.trim();if(!nm)return;if(!ros[curRosCls])ros[curRosCls]=[];ros[curRosCls].push({name:nm,reqs:false,items:[],notes:''});inp.value='';buildSlist();}
+// ══════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════
+styleAbtn('abtn-A', true);
+styleAbtn('abtn-B', false);
 
-function openReq(idx){reqIdx=idx;var s=ros[curRosCls][idx];reqDraft={reqs:s.reqs,items:s.items.slice(),notes:s.notes};document.getElementById('rptitle').textContent=s.name.toUpperCase()+' — REQUIREMENTS';updateTogUI();buildRItems();document.getElementById('rnotes').value=s.notes;document.getElementById('rov').classList.add('on');}
-function closeReq(){document.getElementById('rov').classList.remove('on');reqIdx=null;}
-function toggleReq(){reqDraft.reqs=!reqDraft.reqs;updateTogUI();}
-function updateTogUI(){var tr=document.getElementById('togrow'),tc=document.getElementById('togchk'),tl=document.getElementById('toglbl'),rd=document.getElementById('rdetails');if(reqDraft.reqs){tr.style.border='1px solid #c8a800';tr.style.background='#1a1500';tc.style.border='1px solid #c8a800';tc.style.background='#2a2000';tc.style.color='#c8a800';tc.textContent='✓';tl.style.color='#c8a800';rd.style.display='block';}else{tr.style.border='1px solid #2a2a2a';tr.style.background='#151515';tc.style.border='1px solid #444';tc.style.background='transparent';tc.style.color='#444';tc.textContent='';tl.style.color='#666';rd.style.display='none';}}
-function buildRItems(){var el=document.getElementById('ritemlist');el.innerHTML='';reqDraft.items.forEach(function(it,i){var r=document.createElement('div');r.style.cssText='display:flex;align-items:center;gap:5px;margin-bottom:4px;';var inp=document.createElement('input');inp.className='inp';inp.value=it;inp.style.flex='1';inp.style.fontSize='10px';inp.onchange=function(){reqDraft.items[i]=this.value;};var d=document.createElement('span');d.className='adel';d.textContent='✕';d.onclick=function(){reqDraft.items.splice(i,1);buildRItems();};r.appendChild(inp);r.appendChild(d);el.appendChild(r);});}
-function addRI(){var inp=document.getElementById('rnewitem');var v=inp.value.trim();if(!v)return;reqDraft.items.push(v);inp.value='';buildRItems();}
-function saveReq(){
-  if(reqIdx===null)return;
-  var s=ros[curRosCls][reqIdx];
-  s.reqs=reqDraft.reqs;
-  s.items=reqDraft.items.slice();
-  s.notes=document.getElementById('rnotes').value;
-  // Store accommodations as a combined string for Sheets
-  s.accommodations = s.items.join('; ') + (s.notes ? ' | ' + s.notes : '');
-  closeReq();
-  buildSlist();
-  // Auto-save roster to Sheets so accommodations persist
-  var period = schedule[curRosCls] && schedule[curRosCls].period;
-  if(period){
-    var students = ros[curRosCls].map(function(st, i){
+// Load schedule from Sheets then initialize
+sheetsGet({ action:'getSchedule' }).then(function(res) {
+  if (!res.error && res.schedule && res.schedule.length) {
+    // Map Sheets schedule to local format using class IDs
+    var classIdMap = {
+      'P1':'cls_p1_a','P2':'cls_p2_a','P3':'cls_p3_a',
+      'P5':'cls_p5_s1','P7':'cls_p7_b'
+    };
+    SCHEDULE = res.schedule.map(function(s) {
       return {
-        id: st.id || String(i+1).padStart(3,'0'),
-        firstName: st.name.split(' ')[0] || '',
-        lastName: st.name.split(' ').slice(1).join(' ') || '',
-        accommodations: st.accommodations || (st.items||[]).join('; ') + (st.notes ? ' | ' + st.notes : '')
+        classId: classIdMap[s.period] || ('cls_' + s.period.toLowerCase()),
+        name:    s.className, sub: s.subject,
+        day:     s.day === 'Both' ? 'AB' : s.day,
+        period:  s.period,
       };
     });
-    sheetsPost({action:'updateRoster', period:period, data:students})
-      .then(function(res){
-        if(res.error){ showStatus('Accommodations save failed: '+res.error,'#3a0a0a'); }
-        else{ showStatus('Accommodations saved for ' + s.name); }
-      }).catch(function(e){ showStatus('Could not save accommodations: '+e,'#3a0a0a'); });
   }
-}
-
-// ══════════════════════════════════════════════════════
-function newLesson(){
-  var name=prompt('Lesson name:');if(!name||!name.trim())return;
-  var unit=prompt('Unit name (e.g. Unit 4 — Waves):');if(unit===null)return;
-  var maxId=lessons.reduce(function(m,l){return Math.max(m,l.id);},0);
-  var nl={id:maxId+1,unit:unit.trim()||'Uncategorized',name:name.trim(),multi:false,qotd:'',agenda:[],pres:[],vids:[],rems:[],debrief:[]};
-  lessons.push(nl);curLes=nl.id;buildLib();loadEd(nl.id);
-}
-
-// LESSON + ROSTER SAVE HANDLERS
-// ══════════════════════════════════════════════════════
-function saveCurrentLesson(){
-  var les=lessons.find(function(l){return l.id===curLes;});
-  if(!les){alert('No lesson selected.');return;}
-  // FIX: Use getPrepActive() to get the correct schedule index
-  var activeIndices = getPrepActive();
-  var scheduleIdx = activeIndices[prepPer];
-  if(scheduleIdx === undefined){
-    alert('No class selected. Please select a class first.');
-    return;
-  }
-  var period = schedule[scheduleIdx] && schedule[scheduleIdx].period;
-  if(!period){
-    alert('Could not determine period for this class.');
-    return;
-  }
-  
-  console.log('Saving lesson:', les.name, 'to period:', period, 'scheduleIdx:', scheduleIdx);
-  console.log('Lesson data:', {qotd: les.qotd, agenda: les.agenda, rems: les.rems});
-  
-  // Each period has its own lessons - no sharing between classes
-  var payload={
-    id: les.id,
-    periods: period,  // Just this period, no combining
-    unit: les.unit||'',
-    title: les.name||les.title||'',
-    qotd: les.qotd||'',
-    agenda: les.agenda||[],
-    presentations: (les.pres||[]).map(function(p){ return {label:p.l||'',url:p.url||''}; }),
-    videos: (les.vids||[]).map(function(v){ return {label:v.l||'',url:v.url||''}; }),
-    reminders: les.rems||[],
-    debrief: '',
-    imageUrl: les.imageUrl||''
-  };
-  
-  // Sync to classData so Comm Center sees changes immediately
-  if(classData[scheduleIdx]){
-    classData[scheduleIdx].qotd = les.qotd || '';
-    classData[scheduleIdx].agenda = les.agenda || [];
-    classData[scheduleIdx].pres = les.pres || [];
-    classData[scheduleIdx].vids = les.vids || [];
-    classData[scheduleIdx].rems = les.rems || [];
-    console.log('Synced to classData['+scheduleIdx+']:', classData[scheduleIdx]);
-  }
-  
-  // Also save to localStorage for Start Screen
-  saveStartScreenData();
-  
-  // Set save timestamp to protect from reload overwriting
-  lastSaveTime = Date.now();
-  console.log('Set lastSaveTime to', lastSaveTime);
-  
-  saveLessonToSheets(payload).then(function(res){
-    console.log('saveLessonToSheets response:', res);
-    if(res.error){
-      alert('Save failed: '+res.error);
-    }
-    else{
-      clearDirty();
-      showStatus('Lesson saved to Google Sheets!');
-      // Refresh the Comm Center display with our local data
-      loadClassData();
-    }
-  }).catch(function(e){
-    console.error('Save error:', e);
-    alert('Could not reach Google Sheets. Check your connection.');
-  });
-}
-
-function saveRosterToSheets(){
-  var period=schedule[curRosCls]&&schedule[curRosCls].period;
-  if(!period){alert('No period found for this class.');return;}
-  var students=(ros[curRosCls]||[]).map(function(s,i){
-    return{
-      id: s.id||String(i+1).padStart(3,'0'),
-      firstName: s.name.split(' ')[0]||'',
-      lastName: s.name.split(' ').slice(1).join(' ')||'',
-      accommodations: s.notes||s.accommodations||''
-    };
-  });
-  sheetsPost({action:'updateRoster',period:period,data:students}).then(function(res){
-    if(res.error){alert('Save failed: '+res.error);}
-    else{alert('Roster saved to Google Sheets!');}
-  }).catch(function(){alert('Could not reach Google Sheets.');});
-}
-
-// BOOT
-// ══════════════════════════════════════════════════════
-var now=new Date();
-document.getElementById('prep-date').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}).toUpperCase();
-
-// Initialize UI with fallback data first
-buildClsBtns();
-loadClassData();
-buildLib();
-
-// Load live data from Sheets - chain properly
-loadScheduleFromSheets().then(function() {
-  setDay(curDay);
-  setPrepDay(prepDay);
-}).catch(function(e) {
-  console.warn('Schedule load failed, using defaults:', e);
-  setDay(curDay);
-  setPrepDay(prepDay);
+  buildClsBtns();
+  setDay('A');
+}).catch(function() {
+  buildClsBtns();
+  setDay('A');
 });
-
 </script>
 </body>
 </html>
